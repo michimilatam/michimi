@@ -52,7 +52,7 @@ export default async function MensajesLayout({ children }: { children: React.Rea
       id: r.id,
       otherName: other?.display_name ?? "Usuario",
       otherAvatar: other?.avatar_url ?? null,
-      preview: l ? (l.kind === "oferta" ? "Oferta enviada" : l.kind === "sistema" ? l.body : `${l.mine ? "Vos: " : ""}${l.body}`) : "Sin mensajes todavía",
+      preview: l ? (l.kind === "oferta" ? `${l.mine ? "Vos" : other?.display_name ?? "Usuario"}: hizo una oferta` : l.kind === "sistema" ? l.body : `${l.mine ? "Vos" : other?.display_name ?? "Usuario"}: ${l.body}`) : `${other?.display_name ?? "Usuario"} · sin mensajes todavía`,
       at: l?.at ?? r.created_at,
       unread: unreadBy.get(r.id) ?? 0,
     };

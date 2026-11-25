@@ -53,6 +53,8 @@ export function ConversationList({ groups, me }: { groups: ProductGroup[]; me: s
   }, [me, router]);
 
   const shown = groups.filter((g) => filter === "todo" || g.role === filter);
+  // Una fila por conversación, de la más reciente a la más vieja
+  const rows = shown.flatMap((g) => g.conversations.map((c) => ({ g, c }))).sort((a, b) => b.c.at.localeCompare(a.c.at));
 
   return (
     <aside className={`min-h-0 flex-col border-r border-line bg-card ${activeId ? "hidden md:flex" : "flex"}`}>
@@ -74,54 +76,46 @@ export function ConversationList({ groups, me }: { groups: ProductGroup[]; me: s
             {filter === "vendo" ? "Cuando alguien consulte por tus productos, aparece acá." : "Cuando consultes o hagas una oferta, la conversación aparece acá."}
           </p>
         )}
-        {shown.map((g) => (
-          <section key={g.listingId} className="border-b border-line">
-            {/* Producto */}
-            <Link href={`/publicacion/${g.listingId}`} className="flex items-center gap-3 bg-paper/60 px-4 py-2.5 hover:bg-paper">
-              <span className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-line">
-                {g.cover && <img src={photoUrl(g.cover)} alt="" className="h-full w-full object-cover" />}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold">{g.title}</span>
-                <span className="flex items-center gap-1.5 text-xs text-ink-soft">
-                  <span className={`rounded px-1.5 py-px font-semibold ${g.role === "vendo" ? "bg-ink text-lima" : "bg-lima text-ink"}`}>
-                    {g.role === "vendo" ? "Vendés" : "Comprás"}
+        <ul>
+          {rows.map(({ g, c }) => {
+            const active = c.id === activeId;
+            return (
+              <li key={c.id} className="border-b border-line">
+                <Link href={`/mensajes/${c.id}`} aria-current={active ? "page" : undefined}
+                  className={`flex items-center gap-3 px-4 py-3 ${active ? "bg-lima/25" : "hover:bg-paper"}`}>
+                  {/* Foto del producto con el avatar de la otra persona encima */}
+                  <span className="relative shrink-0">
+                    <span className="block h-12 w-12 overflow-hidden rounded-lg bg-line">
+                      {g.cover && <img src={photoUrl(g.cover)} alt="" className="h-full w-full object-cover" />}
+                    </span>
+                    <span className="absolute -bottom-1 -right-1 rounded-full ring-2 ring-card">
+                      <Avatar name={c.otherName} src={c.otherAvatar} size={22} />
+                    </span>
                   </span>
-                  {g.role === "vendo" && `${g.conversations.length} ${g.conversations.length === 1 ? "interesado" : "interesados"}`}
-                  {g.status !== "activa" && <span>· {g.status}</span>}
-                </span>
-              </span>
-            </Link>
-            {/* Personas */}
-            <ul>
-              {g.conversations.map((c) => {
-                const active = c.id === activeId;
-                return (
-                  <li key={c.id}>
-                    <Link href={`/mensajes/${c.id}`} aria-current={active ? "page" : undefined}
-                      className={`flex items-center gap-3 py-2.5 pl-6 pr-4 ${active ? "bg-lima/25" : "hover:bg-paper"}`}>
-                      <Avatar name={c.otherName} src={c.otherAvatar} />
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-baseline justify-between gap-2">
-                          <span className={`truncate text-[15px] ${c.unread ? "font-bold" : "font-medium"}`}>{c.otherName}</span>
-                          <span className={`shrink-0 text-xs ${c.unread ? "font-semibold text-ink" : "text-ink-soft"}`}>{when(c.at)}</span>
-                        </span>
-                        <span className="flex items-center justify-between gap-2">
-                          <span className={`truncate text-sm ${c.unread ? "text-ink" : "text-ink-soft"}`}>{c.preview}</span>
-                          {c.unread > 0 && (
-                            <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-lima px-1.5 text-[11px] font-bold text-ink" aria-label={`${c.unread} sin leer`}>
-                              {c.unread}
-                            </span>
-                          )}
-                        </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-baseline justify-between gap-2">
+                      <span className={`truncate text-[15px] ${c.unread ? "font-bold" : "font-semibold"}`}>{g.title}</span>
+                      <span className={`shrink-0 text-xs ${c.unread ? "font-semibold text-ink" : "text-ink-soft"}`}>{when(c.at)}</span>
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <span className={`shrink-0 rounded px-1.5 text-[11px] font-semibold ${g.role === "vendo" ? "bg-ink text-lima" : "bg-lima text-ink"}`}>
+                        {g.role === "vendo" ? "Vendés" : "Comprás"}
                       </span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        ))}
+                      <span className={`min-w-0 flex-1 truncate text-sm ${c.unread ? "text-ink" : "text-ink-soft"}`}>
+                        {c.preview}
+                      </span>
+                      {c.unread > 0 && (
+                        <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-lima px-1.5 text-[11px] font-bold text-ink" aria-label={`${c.unread} sin leer`}>
+                          {c.unread}
+                        </span>
+                      )}
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </aside>
   );
