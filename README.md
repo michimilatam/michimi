@@ -46,7 +46,7 @@ supabase/       Esquema Postgres, RLS, RPCs y configuración de Google
 | Login con Google | Google Cloud OAuth (gratis) | — |
 | Web | Next.js | — |
 | App móvil | Expo / React Native | Flutter |
-| Hosting web | **A definir** (ver abajo) | Vercel Hobby · Cloudflare Workers |
+| Hosting web | Cloudflare Workers Free + OpenNext | Vercel Hobby (solo uso no comercial) |
 | Builds de la app | EAS Build Free (cupo mensual) | Build local con Android Studio / Xcode |
 | Gestor de paquetes | pnpm | — |
 | Tests | Vitest | — |
@@ -72,6 +72,15 @@ pnpm dev:web          # http://localhost:3000
 pnpm dev:mobile       # escaneá el QR con Expo Go
 pnpm test             # tests del dominio
 ```
+
+### Publicar la web en Cloudflare (gratis)
+```bash
+cd apps/web
+npx wrangler login                 # cuenta gratuita de Cloudflare
+# .env.local con NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY (se incrustan en el build)
+pnpm deploy                        # build OpenNext + deploy a Workers
+```
+`wrangler.jsonc` ya apunta a `www.michimi.com` y `michimi.com`. Para eso, el dominio tiene que estar en tu cuenta de Cloudflare: Add a site, y después cambiar los nameservers donde compraste el dominio.
 
 ### Activar Google
 1. En Google Cloud Console → APIs y servicios → Credenciales, creá un **ID de cliente OAuth** de tipo *Aplicación web*.

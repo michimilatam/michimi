@@ -11,3 +11,6 @@ ios/
 android/
 .DS_Store
 supabase/.temp/
+.open-next/
+.wrangler/
+.dev.vars
