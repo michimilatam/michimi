@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { CATEGORIES, CONDITIONS, COUNTRIES, CURRENCIES, currenciesFor, flag } from "@michimi/core";
+import { CATEGORIES, CONDITIONS, subcategoryLabel, type CategorySlug, COUNTRIES, CURRENCIES, currenciesFor, flag } from "@michimi/core";
 import { supabaseServer } from "@/lib/supabase/server";
 import { currentCountry } from "@/lib/country";
 import { ListingCard, type ListingCardData } from "@/components/ListingCard";
 
-type SP = Promise<{ q?: string; cat?: string; cond?: string; cur?: string; orden?: string; region?: string }>;
+type SP = Promise<{ q?: string; cat?: string; sub?: string; cond?: string; cur?: string; orden?: string; region?: string }>;
 
 export default async function Home({ searchParams }: { searchParams: SP }) {
   const sp = await searchParams;
@@ -20,6 +20,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
   if (sp.q) query = query.textSearch("search", sp.q, { type: "websearch", config: "spanish" });
   if (sp.region) query = query.eq("region", sp.region);
   if (sp.cat) query = query.eq("category", sp.cat);
+  if (sp.cat && sp.sub) query = query.eq("subcategory", sp.sub);
   if (sp.cond) query = query.eq("condition", sp.cond);
   if (sp.cur) query = query.eq("currency", sp.cur);
   query = sp.orden === "precio" ? query.order("price_amount") : query.order("created_at", { ascending: false });
@@ -45,6 +46,15 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
               {Object.entries(CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
             </select>
           </div>
+          {sp.cat && sp.cat in CATEGORIES && (
+            <div>
+              <label className="label" htmlFor="sub">Subcategoría</label>
+              <select id="sub" name="sub" defaultValue={sp.sub ?? ""} className="field">
+                <option value="">Todas</option>
+                {CATEGORIES[sp.cat as CategorySlug].subs.map((x) => <option key={x.slug} value={x.slug}>{x.label}</option>)}
+              </select>
+            </div>
+          )}
           <div>
             <label className="label" htmlFor="cond">Estado</label>
             <select id="cond" name="cond" defaultValue={sp.cond ?? ""} className="field">
@@ -72,7 +82,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
 
       <section>
         <h1 className="mb-4 text-2xl font-bold">
-          {sp.q ? <>Resultados para “{sp.q}”</> : <><span aria-hidden="true">{flag(country)}</span> Publicaciones en {sp.region ?? c.name}</>}
+          {sp.q ? <>Resultados para “{sp.q}”</> : <><span aria-hidden="true">{flag(country)}</span> {subcategoryLabel(sp.cat, sp.sub) ?? (sp.cat && sp.cat in CATEGORIES ? CATEGORIES[sp.cat as CategorySlug].label : "Publicaciones")} en {sp.region ?? c.name}</>}
         </h1>
         {error && <p className="text-bad">No pudimos cargar las publicaciones. Probá de nuevo en un momento.</p>}
         {data && data.length === 0 && (

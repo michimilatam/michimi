@@ -2,13 +2,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  CATEGORIES, CONDITIONS, COUNTRIES, COUNTRY_CODES, CURRENCIES, currenciesFor, flag, listingDraftSchema, parseMoney,
+  CATEGORIES, CONDITIONS, FIELD_LABEL, COUNTRIES, COUNTRY_CODES, CURRENCIES, currenciesFor, flag, listingDraftSchema, parseMoney,
   type CategorySlug, type CountryCode, type CurrencyCode,
 } from "@michimi/core";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { isImageFile, prepareImage } from "@/lib/image";
 
-const FIELD_LABEL: Record<string, string> = { marca: "Marca", modelo: "Modelo", bateria_pct: "Salud de batería (%)", medidas: "Medidas (alto × ancho × prof.)" };
 const MAX_PHOTOS = 12;
 
 export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }) {
@@ -16,6 +15,7 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
   const [country, setCountry] = useState<CountryCode>(initialCountry);
   const [region, setRegion] = useState<string>(COUNTRIES[initialCountry].regions[0]);
   const [category, setCategory] = useState<CategorySlug | "">("");
+  const [subcategory, setSubcategory] = useState("");
   const [currency, setCurrency] = useState<CurrencyCode>(COUNTRIES[initialCountry].local);
   const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -64,6 +64,7 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
       title: String(f.get("title") ?? ""),
       description: String(f.get("description") ?? ""),
       category: category || undefined,
+      subcategory,
       condition: String(f.get("condition")),
       priceAmount: price?.amount ?? 0,
       currency,
@@ -91,7 +92,7 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
     const { data: listing, error } = await supabase
       .from("listings")
       .insert({
-        seller_id: u.user.id, title: d.title, description: d.description, category: d.category, condition: d.condition,
+        seller_id: u.user.id, title: d.title, description: d.description, category: d.category, subcategory: d.subcategory, condition: d.condition,
         price_amount: d.priceAmount, currency: d.currency, country: d.country, region: d.region, city: d.city,
         defects: d.defects, accessories: d.accessories, attributes: d.attributes,
       })
@@ -157,11 +158,20 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
         </div>
         <div>
           <label className="label" htmlFor="category">Categoría</label>
-          <select id="category" value={category} onChange={(e) => setCategory(e.target.value as CategorySlug)} className={`field ${category ? "" : "text-ink-soft"}`}>
+          <select id="category" value={category} onChange={(e) => { setCategory(e.target.value as CategorySlug); setSubcategory(""); }} className={`field ${category ? "" : "text-ink-soft"}`}>
             <option value="" disabled>Elegí una categoría</option>
             {Object.entries(CATEGORIES).map(([k, v]) => <option key={k} value={k} className="text-ink">{v.label}</option>)}
           </select>
           {err("category")}
+        </div>
+        <div>
+          <label className="label" htmlFor="subcategory">Subcategoría</label>
+          <select id="subcategory" value={subcategory} disabled={!category} onChange={(e) => setSubcategory(e.target.value)}
+            className={`field disabled:opacity-50 ${subcategory ? "" : "text-ink-soft"}`}>
+            <option value="" disabled>{category ? "Elegí una subcategoría" : "Primero elegí la categoría"}</option>
+            {category && CATEGORIES[category].subs.map((x) => <option key={x.slug} value={x.slug} className="text-ink">{x.label}</option>)}
+          </select>
+          {err("subcategory")}
         </div>
         <div>
           <label className="label" htmlFor="condition">Estado</label>

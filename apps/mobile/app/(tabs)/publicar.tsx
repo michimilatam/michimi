@@ -2,13 +2,12 @@ import { useState } from "react";
 import { Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import { CATEGORIES, CONDITIONS, COUNTRIES, CURRENCIES, currenciesFor, listingDraftSchema, parseMoney, type CategorySlug, type Condition, type CurrencyCode } from "@michimi/core";
+import { CATEGORIES, CONDITIONS, FIELD_LABEL, COUNTRIES, CURRENCIES, currenciesFor, listingDraftSchema, parseMoney, type CategorySlug, type Condition, type CurrencyCode } from "@michimi/core";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/useSession";
 import { Button } from "@/components/ui";
 import { c, s } from "@/lib/theme";
 
-const FIELD_LABEL: Record<string, string> = { marca: "Marca", modelo: "Modelo", bateria_pct: "Salud de batería (%)", medidas: "Medidas" };
 
 function Chips<T extends string>({ options, value, onChange }: { options: [T, string][]; value: T; onChange: (v: T) => void }) {
   return (
@@ -27,6 +26,7 @@ export default function Publicar() {
   const { user } = useSession();
   const [photos, setPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
   const [category, setCategory] = useState<CategorySlug | "">("");
+  const [subcategory, setSubcategory] = useState("");
   const [condition, setCondition] = useState<Condition>("muy_bueno");
   const [currency, setCurrency] = useState<CurrencyCode>("PYG");
   const [region, setRegion] = useState<string>(COUNTRIES.PY.regions[0]);
@@ -51,7 +51,7 @@ export default function Publicar() {
       if (v) attributes[k] = v;
     }
     const parsed = listingDraftSchema.safeParse({
-      title: f.title ?? "", description: f.description ?? "", category: category || undefined, condition,
+      title: f.title ?? "", description: f.description ?? "", category: category || undefined, subcategory, condition,
       priceAmount: parseMoney(f.price ?? "", currency)?.amount ?? 0, currency, country: "PY",
       region, city: f.city ?? "", defects: f.defects || undefined, accessories: f.accessories || undefined, attributes, photoCount: photos.length,
     });
@@ -63,7 +63,7 @@ export default function Publicar() {
     setErrors({}); setBusy(true);
     const d = parsed.data;
     const { data: listing, error } = await supabase.from("listings").insert({
-      seller_id: user!.id, title: d.title, description: d.description, category: d.category, condition: d.condition,
+      seller_id: user!.id, title: d.title, description: d.description, category: d.category, subcategory: d.subcategory, condition: d.condition,
       price_amount: d.priceAmount, currency: d.currency, country: d.country, region: d.region, city: d.city, defects: d.defects, accessories: d.accessories, attributes: d.attributes,
     }).select("id").single();
     if (error || !listing) { setBusy(false); return setErrors({ form: error?.message ?? "No se pudo publicar" }); }
@@ -87,8 +87,15 @@ export default function Publicar() {
       <E k="photoCount" />
       <TextInput placeholder="Título (ej.: iPhone 13 128 GB)" style={s.field} onChangeText={set("title")} /><E k="title" />
       <Text style={s.soft}>Categoría</Text>
-      <Chips<CategorySlug | ""> options={Object.entries(CATEGORIES).map(([k, v]) => [k as CategorySlug, v.label])} value={category} onChange={setCategory} />
+      <Chips<CategorySlug | ""> options={Object.entries(CATEGORIES).map(([k, v]) => [k as CategorySlug, v.label])} value={category} onChange={(v) => { setCategory(v); setSubcategory(""); }} />
       <E k="category" />
+      {category !== "" && (
+        <>
+          <Text style={s.soft}>Subcategoría</Text>
+          <Chips options={CATEGORIES[category].subs.map((x) => [x.slug, x.label] as [string, string])} value={subcategory} onChange={setSubcategory} />
+          <E k="subcategory" />
+        </>
+      )}
       {category !== "" && CATEGORIES[category].fields.map((k) => (
         <TextInput key={k} placeholder={`${FIELD_LABEL[k] ?? k} (opcional)`} style={s.field} onChangeText={set(`attr_${k}`)} />
       ))}

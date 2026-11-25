@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Fragment } from "react";
 import { notFound } from "next/navigation";
-import { CATEGORIES, CONDITIONS, formatMoney, summarize, BADGE_LABEL, type CategorySlug, type Condition, type CurrencyCode } from "@michimi/core";
+import { CATEGORIES, CONDITIONS, subcategoryLabel, formatMoney, summarize, BADGE_LABEL, type CategorySlug, type Condition, type CurrencyCode } from "@michimi/core";
 import { supabaseServer } from "@/lib/supabase/server";
 import { photoUrl } from "@/lib/photo";
 import { ContactButtons } from "./ContactButtons";
@@ -52,7 +52,7 @@ export default async function Publicacion({ params, searchParams }: { params: P;
 
       <div className="space-y-5">
         <div>
-          <p className="text-sm text-ink-soft">{CATEGORIES[l.category as CategorySlug]?.label} · {l.city}{l.region ? `, ${l.region}` : ""}</p>
+          <p className="text-sm text-ink-soft">{CATEGORIES[l.category as CategorySlug]?.label}{subcategoryLabel(l.category, l.subcategory) ? ` › ${subcategoryLabel(l.category, l.subcategory)}` : ""} · {l.city}{l.region ? `, ${l.region}` : ""}</p>
           <h1 className="text-2xl font-bold">{l.title}</h1>
           <p className="mt-2 text-3xl font-bold tabular-nums">{formatMoney({ amount: l.price_amount, currency: l.currency as CurrencyCode })}</p>
           <p className="mt-1 text-sm">

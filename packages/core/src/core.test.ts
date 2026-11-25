@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { flag, formatMoney, parseMoney, summarize, isRatingVisible, listingDraftSchema, currenciesFor } from "./index";
+import { CATEGORIES, CATEGORY_SLUGS, flag, formatMoney, parseMoney, summarize, isRatingVisible, listingDraftSchema, currenciesFor } from "./index";
 
 describe("money", () => {
   it("formats guaraníes without decimals", () => {
@@ -53,6 +53,7 @@ const baseDraft = {
     title: "iPhone 13 128GB azul",
     description: "Impecable, siempre con funda y vidrio templado. Batería original.",
     category: "celulares" as const,
+    subcategory: "celulares-y-smartphones",
     condition: "excelente" as const,
     priceAmount: 3_500_000,
     currency: "PYG" as const,
@@ -72,6 +73,14 @@ describe("listing draft", () => {
   });
   it("short title and empty description are allowed", () => {
     expect(listingDraftSchema.safeParse({ ...base, title: "Bici", description: "" }).success).toBe(true);
+  });
+  it("subcategory must belong to the category", () => {
+    expect(listingDraftSchema.safeParse({ ...base, subcategory: "autos" }).success).toBe(false);
+    expect(listingDraftSchema.safeParse({ ...base, subcategory: "" }).success).toBe(false);
+  });
+  it("category tree has 22 categories with unique sub slugs", () => {
+    expect(CATEGORY_SLUGS.length).toBe(22);
+    for (const c of Object.values(CATEGORIES)) expect(new Set(c.subs.map((x) => x.slug)).size).toBe(c.subs.length);
   });
   it("category must be chosen", () => {
     expect(listingDraftSchema.safeParse({ ...base, category: "" }).success).toBe(false);
