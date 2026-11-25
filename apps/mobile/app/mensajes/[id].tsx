@@ -35,6 +35,10 @@ export default function Conversacion() {
     return () => { supabase.removeChannel(ch); };
   }, [id]);
 
+  useEffect(() => {
+    if (user) supabase.rpc("mark_conversation_read", { p_conversation: id });
+  }, [id, user, msgs.length]);
+
   async function send() {
     if (!text.trim() || !user) return;
     if (counterFor) {

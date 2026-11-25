@@ -4,6 +4,8 @@ import "./globals.css";
 import { supabaseServer } from "@/lib/supabase/server";
 import { currentCountry } from "@/lib/country";
 import { CountryPicker } from "@/components/CountryPicker";
+import { MessagesBadge } from "@/components/MessagesBadge";
+import { UserMenu } from "@/components/UserMenu";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.michimi.com"),
@@ -19,6 +21,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const supabase = await supabaseServer();
   const { data } = await supabase.auth.getUser();
   const country = await currentCountry();
+  const profile = data.user
+    ? (await supabase.from("profiles").select("display_name,avatar_url").eq("id", data.user.id).maybeSingle()).data
+    : null;
   return (
     <html lang="es-PY">
       <body className="min-h-dvh">
@@ -35,15 +40,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 className="h-10 w-full rounded-full bg-white/10 px-4 text-[15px] placeholder:text-white/60 outline-none focus:bg-white focus:text-ink"
               />
             </form>
+            {data.user && <MessagesBadge userId={data.user.id} />}
+            <Link href="/publicar" className="btn-primary h-10 px-4 text-sm">Vender</Link>
             {data.user ? (
-              <>
-                <Link href="/mensajes" className="hidden text-sm sm:block">Mensajes</Link>
-                <Link href={`/perfil/${data.user.id}`} className="hidden text-sm sm:block">Mi perfil</Link>
-              </>
+              <UserMenu userId={data.user.id} name={profile?.display_name ?? data.user.email ?? "Usuario"} avatar={profile?.avatar_url ?? null} />
             ) : (
               <Link href="/ingresar" className="text-sm">Ingresar</Link>
             )}
-            <Link href="/publicar" className="btn-primary h-10 px-4 text-sm">Vender</Link>
           </nav>
         </header>
         <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>

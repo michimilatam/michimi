@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatMoney, parseMoney, type CurrencyCode } from "@michimi/core";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { READ_EVENT } from "@/components/MessagesBadge";
 
 type Msg = { id: number; sender_id: string | null; kind: "texto" | "oferta" | "sistema"; body: string; offer_id: string | null; created_at: string };
 type Offer = { id: string; created_by: string; amount: number; currency: string; status: string; expires_at: string };
@@ -41,6 +42,11 @@ export function Chat(props: {
     return () => { supabase.removeChannel(ch); };
   }, [convId]);
   useEffect(() => bottom.current?.scrollIntoView({ behavior: "smooth" }), [messages.length]);
+  // Marca la conversación como leída al abrirla y cada vez que llega algo nuevo
+  useEffect(() => {
+    supabaseBrowser().rpc("mark_conversation_read", { p_conversation: convId })
+      .then(() => window.dispatchEvent(new Event(READ_EVENT)));
+  }, [convId, messages.length]);
 
   async function send(body: string) {
     if (!body.trim()) return;
