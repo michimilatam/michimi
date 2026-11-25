@@ -36,11 +36,12 @@ export default async function Perfil({ params }: { params: Promise<{ id: string 
       </header>
 
       {p.bio && <p className="max-w-2xl whitespace-pre-line text-[15px]">{p.bio}</p>}
+      {mine && <Link href="/perfil/editar" className="btn-ghost w-fit">Editar perfil</Link>}
       {mine && <EmailToggle userId={id} initial={p.email_notifications ?? true} />}
       {mine && p.professional_status !== "verificado" && (
         <Link href="/verificacion" className="block rounded-card border border-line bg-card p-4 hover:border-ink">
-          <p className="font-semibold">{p.professional_status === "pendiente" ? "Tu verificación está en revisión" : "¿Ofrecés servicios? Verificate como profesional"}</p>
-          <p className="text-sm text-ink-soft">{p.professional_status === "pendiente" ? "Te avisamos cuando esté lista. Suele tardar 1 a 3 días hábiles." : "Subí tu documento y título o matrícula. El distintivo te hace aparecer como profesional verificado."}</p>
+          <p className="font-semibold">{p.professional_status === "pendiente" ? "Tu verificación está en revisión" : "Verificá tu identidad"}</p>
+          <p className="text-sm text-ink-soft">{p.professional_status === "pendiente" ? "Te avisamos cuando esté lista. Suele tardar 1 a 3 días hábiles." : "Subí tu documento y te sumamos el sello azul de usuario verificado. Genera más confianza al comprar, vender u ofrecer servicios."}</p>
         </Link>
       )}
       <section className="grid gap-3 sm:grid-cols-2">

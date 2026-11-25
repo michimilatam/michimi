@@ -19,7 +19,6 @@ export function VerificacionForm({ userId, profession, bio }: { userId: string; 
     const prof = String(f.get("profession") ?? "").trim();
     const doc = f.get("document") as File | null;
     const cred = f.get("credential") as File | null;
-    if (prof.length < 3) return setErr("Escribí tu profesión u oficio");
     if (!doc || !doc.size) return setErr("Subí una foto de tu documento de identidad");
     setBusy(true); setErr(null);
     const supabase = supabaseBrowser();
@@ -34,7 +33,7 @@ export function VerificacionForm({ userId, profession, bio }: { userId: string; 
       const document_path = await up(doc, "documento");
       const credential_path = cred && cred.size ? await up(cred, "titulo") : null;
       await supabase.from("profiles").update({ bio: String(f.get("bio") ?? "").trim() || null }).eq("id", userId);
-      const { error } = await supabase.from("verification_requests").insert({ user_id: userId, profession: prof, document_path, credential_path, note: String(f.get("note") ?? "").trim() || null });
+      const { error } = await supabase.from("verification_requests").insert({ user_id: userId, profession: prof || null, document_path, credential_path, note: String(f.get("note") ?? "").trim() || null });
       if (error) throw error;
       router.refresh();
     } catch (x) {
@@ -46,7 +45,7 @@ export function VerificacionForm({ userId, profession, bio }: { userId: string; 
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
       <div>
-        <label className="label" htmlFor="profession">Profesión u oficio</label>
+        <label className="label" htmlFor="profession">Profesión u oficio <span className="font-normal">(solo si ofrecés servicios)</span></label>
         <input id="profession" name="profession" defaultValue={profession} className="field" placeholder="Ej.: Electricista matriculado" />
       </div>
       <div>
@@ -58,7 +57,7 @@ export function VerificacionForm({ userId, profession, bio }: { userId: string; 
         <input id="document" name="document" type="file" accept="image/*,.heic,.heif,application/pdf" className="field h-auto py-2" />
       </div>
       <div>
-        <label className="label" htmlFor="credential">Título, matrícula o certificado <span className="font-normal">(si tu oficio lo tiene)</span></label>
+        <label className="label" htmlFor="credential">Título, matrícula o certificado <span className="font-normal">(opcional, si ofrecés servicios)</span></label>
         <input id="credential" name="credential" type="file" accept="image/*,.heic,.heif,application/pdf" className="field h-auto py-2" />
       </div>
       <div>

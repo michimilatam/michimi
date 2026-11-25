@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { VerificacionForm } from "./VerificacionForm";
 
-export const metadata: Metadata = { title: "Verificación profesional" };
+export const metadata: Metadata = { title: "Verificar mi identidad" };
 
 export default async function Verificacion() {
   const supabase = await supabaseServer();
@@ -13,11 +13,11 @@ export default async function Verificacion() {
   return (
     <div className="mx-auto max-w-xl space-y-5">
       <header>
-        <h1 className="text-3xl font-bold">Profesional verificado</h1>
-        <p className="text-ink-soft">Revisamos a mano tu identidad y tu título o matrícula. Si está todo bien, tu perfil y tus servicios muestran el distintivo.</p>
+        <h1 className="text-3xl font-bold">Usuario verificado</h1>
+        <p className="text-ink-soft">Revisamos a mano tu documento de identidad. Si está todo bien, tu perfil y tus publicaciones muestran el sello azul de usuario verificado. Si ofrecés servicios, podés sumar tu título o matrícula.</p>
       </header>
       {p?.professional_status === "verificado" ? (
-        <p className="rounded-card bg-lima p-4 font-semibold text-ink">Ya sos profesional verificado.</p>
+        <p className="rounded-card bg-lima p-4 font-semibold text-ink">Ya sos usuario verificado.</p>
       ) : p?.professional_status === "pendiente" ? (
         <p className="rounded-card border border-line bg-card p-4">Recibimos tu solicitud. La revisamos en 1 a 3 días hábiles.</p>
       ) : (
