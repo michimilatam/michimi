@@ -17,5 +17,10 @@
   "engines": {
     "node": ">=20"
   },
-  "packageManager": "pnpm@10.20.0"
+  "packageManager": "pnpm@10.20.0",
+  "pnpm": {
+    "overrides": {
+      "@opennextjs/aws>cookie": "0.7.2"
+    }
+  }
 }
