@@ -101,3 +101,6 @@ pnpm deploy                        # build OpenNext + deploy a Workers
 - [DESIGN.md](DESIGN.md): tokens y reglas visuales.
 - [CONTEXT.md](CONTEXT.md): glosario del dominio.
 - [docs/fuentes-analizadas.md](docs/fuentes-analizadas.md): Spree, Bagisto y BeikeShop.
+
+## Créditos
+Banderas: [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), gráficos de Twemoji (CC-BY 4.0).

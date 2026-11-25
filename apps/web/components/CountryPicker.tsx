@@ -15,6 +15,7 @@ export function CountryPicker({ current }: { current: CountryCode }) {
           router.push("/");
           router.refresh();
         }}
+        style={{ fontFamily: "var(--font-sans)" }}
         className="h-10 cursor-pointer appearance-none rounded-full bg-white/10 pl-3 pr-7 text-[15px] text-white outline-none hover:bg-white/20 [&>option]:text-ink"
         aria-label="Elegí tu país"
       >
