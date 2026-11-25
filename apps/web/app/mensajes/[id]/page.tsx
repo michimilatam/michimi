@@ -8,7 +8,7 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
   const { data: u } = await supabase.auth.getUser();
   const { data: c } = await supabase
     .from("conversations")
-    .select("*, listing:listings(id,title,kind,currency,price_amount,status,listing_photos(path,position)),request:service_requests(id,title,status,currency), buyer:profiles!conversations_buyer_id_fkey(id,display_name,avatar_url), seller:profiles!conversations_seller_id_fkey(id,display_name,avatar_url)")
+    .select("*, listing:listings(id,title,kind,currency,price_amount,status,listing_photos(path,position)),request:service_requests(id,title,status,currency), buyer:profiles!conversations_buyer_id_fkey(id,display_name,avatar_url,professional_status), seller:profiles!conversations_seller_id_fkey(id,display_name,avatar_url,professional_status)")
     .eq("id", id)
     .maybeSingle();
   if (!c || !u.user) notFound();
@@ -26,7 +26,7 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
       key={id}
       me={u.user.id}
       role={imSeller ? "vendo" : "compro"}
-      other={{ id: other.id, name: other.display_name, avatar: other.avatar_url }}
+      other={{ id: other.id, name: other.display_name, avatar: other.avatar_url, verified: other.professional_status === "verificado" }}
       conversation={{ id, buyerId: c.buyer_id, listing: { ...subject, cover } }}
       initialMessages={messages ?? []}
       initialOffers={offers ?? []}

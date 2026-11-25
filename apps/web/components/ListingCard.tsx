@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CONDITIONS, formatMoney, formatPrice, type Condition, type CurrencyCode } from "@michimi/core";
 import { photoUrl } from "@/lib/photo";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 export interface ListingCardData {
   id: string;
@@ -14,6 +15,7 @@ export interface ListingCardData {
   region?: string | null;
   status: string;
   listing_photos: { path: string; position: number }[];
+  seller?: { professional_status?: string | null } | null;
 }
 
 export function ListingCard({ l, faved }: { l: ListingCardData; faved?: boolean }) {
@@ -34,7 +36,7 @@ export function ListingCard({ l, faved }: { l: ListingCardData; faved?: boolean 
       <div className="p-3">
         <p className="text-lg font-bold tabular-nums">{formatPrice({ priceType: l.price_type, amount: l.price_amount, currency: l.currency }, (a) => formatMoney({ amount: a, currency: l.currency }))}</p>
         <p className="line-clamp-2 text-[15px] group-hover:underline">{l.title}</p>
-        <p className="mt-1 text-xs text-ink-soft">{l.condition ? `${CONDITIONS[l.condition]} · ` : ""}{l.city}{l.region && l.region !== l.city ? `, ${l.region}` : ""}</p>
+        <p className="mt-1 flex items-center gap-1 text-xs text-ink-soft">{l.seller?.professional_status === "verificado" && <VerifiedBadge size={14} />}<span className="truncate">{l.condition ? `${CONDITIONS[l.condition]} · ` : ""}{l.city}{l.region && l.region !== l.city ? `, ${l.region}` : ""}</span></p>
       </div>
     </Link>
   );

@@ -78,8 +78,8 @@ describe("listing draft", () => {
     expect(listingDraftSchema.safeParse({ ...base, subcategory: "autos" }).success).toBe(false);
     expect(listingDraftSchema.safeParse({ ...base, subcategory: "" }).success).toBe(false);
   });
-  it("category tree has 22 categories with unique sub slugs", () => {
-    expect(CATEGORY_SLUGS.length).toBe(22);
+  it("category tree has 23 categories with unique sub slugs", () => {
+    expect(CATEGORY_SLUGS.length).toBe(23);
     for (const c of Object.values(CATEGORIES)) expect(new Set(c.subs.map((x) => x.slug)).size).toBe(c.subs.length);
   });
   it("category must be chosen", () => {

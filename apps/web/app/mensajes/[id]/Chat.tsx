@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatMoney, parseMoney, type CurrencyCode } from "@michimi/core";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { photoUrl } from "@/lib/photo";
 import { READ_EVENT } from "@/components/MessagesBadge";
@@ -21,7 +22,7 @@ const OFFER_STATUS: Record<string, string> = { pendiente: "Pendiente", aceptada:
 export function Chat(props: {
   me: string;
   role: "vendo" | "compro";
-  other: { id: string; name: string; avatar: string | null };
+  other: { id: string; name: string; avatar: string | null; verified?: boolean };
   conversation: { id: string; buyerId: string; listing: { id: string; title: string; currency: string; price_amount: number | null; status: string; cover: string | null; href?: string } };
   initialMessages: Msg[];
   initialOffers: Offer[];
@@ -108,7 +109,7 @@ export function Chat(props: {
             : <span className="flex h-10 w-10 items-center justify-center rounded-full bg-ink font-semibold text-lima">{(props.other.name[0] ?? "U").toUpperCase()}</span>}
         </Link>
         <div className="min-w-0 flex-1">
-          <Link href={`/perfil/${props.other.id}`} className="block truncate font-semibold hover:underline">{props.other.name}</Link>
+          <Link href={`/perfil/${props.other.id}`} className="flex items-center gap-1 truncate font-semibold hover:underline">{props.other.name}{props.other.verified && <VerifiedBadge size={16} />}</Link>
           <p className="truncate text-xs text-ink-soft">{svc ? (props.role === "vendo" ? "Cliente" : "Profesional") : (props.role === "vendo" ? "Le interesa tu producto" : "Vendedor")}</p>
         </div>
         <Link href={l.href ?? `/publicacion/${l.id}`} className="flex max-w-[45%] items-center gap-2 rounded-xl border border-line px-2 py-1.5 hover:border-ink">

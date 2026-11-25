@@ -11,6 +11,7 @@ type SP = Promise<{ q?: string; cat?: string; sub?: string; cond?: string; cur?:
 export default async function Home({ searchParams }: { searchParams: SP }) {
   const sp = await searchParams;
   const servicios = sp.tipo === "servicios";
+  const mixed = !!sp.q && !sp.tipo; // búsqueda desde el header: productos y servicios, separados
   const country = await currentCountry();
   const c = COUNTRIES[country];
   const supabase = await supabaseServer();
@@ -32,10 +33,22 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
   query = sp.orden === "precio" ? query.order("price_amount", { nullsFirst: false }) : query.order("created_at", { ascending: false });
   const { data, error } = await query;
 
+  // Búsqueda mixta: además de productos, traemos los servicios que coinciden (sección aparte).
+  let svcData: typeof data = null;
+  if (mixed) {
+    let sq = supabase.from("listings")
+      .select("id,title,price_amount,price_type,currency,condition,city,region,status,seller_id,coverage_regions,subcategory,listing_photos(path,position),seller:profiles!listings_seller_id_fkey(display_name,avatar_url,profession,professional_status)")
+      .eq("country", country).eq("kind", "servicio").eq("status", "activa")
+      .textSearch("search", sp.q!, { type: "websearch", config: "spanish" }).order("created_at", { ascending: false }).limit(12);
+    if (sp.region) sq = sq.or(`region.eq.${sp.region},coverage_regions.cs.{"${sp.region}"}`);
+    svcData = (await sq).data;
+  }
+  const all = [...(data ?? []), ...(svcData ?? [])];
+
   const { data: auth } = await supabase.auth.getUser();
   const favs = new Set<string>();
-  if (auth.user && data?.length) {
-    const { data: f } = await supabase.from("favorites").select("listing_id").eq("user_id", auth.user.id).in("listing_id", data.map((l) => l.id as string));
+  if (auth.user && all.length) {
+    const { data: f } = await supabase.from("favorites").select("listing_id").eq("user_id", auth.user.id).in("listing_id", all.map((l) => l.id as string));
     for (const x of f ?? []) favs.add(x.listing_id);
   }
   const filters = { tipo: servicios ? "servicio" : "producto", cat: servicios ? "" : sp.cat ?? "", sub: sp.sub ?? "", region: sp.region ?? "", cond: sp.cond ?? "", cur: sp.cur ?? "" };
@@ -43,8 +56,9 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
 
   // Reputación de los profesionales (para las tarjetas de servicio)
   const rep = new Map<string, { avg: number | null; count: number; done: number }>();
-  if (servicios && data?.length) {
-    const ids = [...new Set(data.map((l) => l.seller_id as string))];
+  const svcRows = servicios ? data ?? [] : svcData ?? [];
+  if (svcRows.length) {
+    const ids = [...new Set(svcRows.map((l) => l.seller_id as string))];
     const { data: reps } = await supabase.from("user_reputation").select("user_id,seller_avg,seller_count,sales_completed").in("user_id", ids);
     for (const r of reps ?? []) rep.set(r.user_id, { avg: r.seller_avg ? Number(r.seller_avg) : null, count: Number(r.seller_count), done: Number(r.sales_completed) });
   }
@@ -137,6 +151,27 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
             {hasFilter && <SaveSearch query={sp.q ?? ""} filters={filters} country={country} loggedIn={!!auth.user} />}
           </div>
           {error && <p className="text-bad">No pudimos cargar las publicaciones. Probá de nuevo en un momento.</p>}
+          {mixed ? (
+            <div className="space-y-6">
+              {!all.length && <p className="rounded-card border border-dashed border-line p-10 text-center text-ink-soft">No encontramos productos ni servicios para “{sp.q}”. Probá con otras palabras.</p>}
+              {!!data?.length && (
+                <div>
+                  <h2 className="mb-2 flex items-baseline justify-between text-lg font-semibold">Productos <span className="text-sm font-normal text-ink-soft">{data.length}</span></h2>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                    {(data as unknown as ListingCardData[]).map((l) => <ListingCard key={l.id} l={l} faved={auth.user ? favs.has(l.id) : undefined} />)}
+                  </div>
+                </div>
+              )}
+              {!!svcData?.length && (
+                <div>
+                  <h2 className="mb-2 flex items-baseline justify-between text-lg font-semibold">Servicios <Link href={`/?tipo=servicios&q=${encodeURIComponent(sp.q!)}`} className="text-sm font-normal underline">Ver todos ({svcData.length})</Link></h2>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {(svcData as unknown as ServiceCardData[]).map((l) => <ServiceCard key={l.id} l={l} rep={rep.get(l.seller_id)} faved={auth.user ? favs.has(l.id) : undefined} />)}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : <>
           {data && data.length === 0 && (
             <div className="rounded-card border border-dashed border-line p-10 text-center">
               <p className="text-lg font-semibold">Todavía no hay nada con esos filtros.</p>
@@ -153,6 +188,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
               {(data as unknown as ListingCardData[] | null)?.map((l) => <ListingCard key={l.id} l={l} faved={auth.user ? favs.has(l.id) : undefined} />)}
             </div>
           )}
+          </>}
         </section>
       </div>
     </div>
