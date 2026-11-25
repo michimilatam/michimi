@@ -12,13 +12,13 @@ export const CONDITIONS = {
 } as const;
 export type Condition = keyof typeof CONDITIONS;
 
-/** Launch categories (see product doc §4) + required fields per category. */
+/** Launch categories (see product doc §4) + suggested (optional) detail fields per category. */
 export const CATEGORIES = {
-  celulares: { label: "Celulares y electrónica", required: ["marca", "modelo", "bateria_pct"] },
-  muebles: { label: "Muebles y electrodomésticos", required: ["medidas"] },
-  herramientas: { label: "Herramientas y equipamiento", required: ["marca"] },
-  deportes: { label: "Artículos deportivos", required: [] },
-} as const satisfies Record<string, { label: string; required: readonly string[] }>;
+  celulares: { label: "Celulares y electrónica", fields: ["marca", "modelo", "bateria_pct"] },
+  muebles: { label: "Muebles y electrodomésticos", fields: ["marca", "medidas"] },
+  herramientas: { label: "Herramientas y equipamiento", fields: ["marca", "modelo"] },
+  deportes: { label: "Artículos deportivos", fields: ["marca"] },
+} as const satisfies Record<string, { label: string; fields: readonly string[] }>;
 export type CategorySlug = keyof typeof CATEGORIES;
 
 const currencyEnum = z.enum(Object.keys(CURRENCIES) as [keyof typeof CURRENCIES, ...(keyof typeof CURRENCIES)[]]);
@@ -26,31 +26,26 @@ const countryEnum = z.enum(Object.keys(COUNTRIES) as [keyof typeof COUNTRIES, ..
 
 /**
  * Listing draft validation — shared by web and mobile so a "Publicar" form
- * behaves identically everywhere. Category-specific required attributes are
- * enforced in superRefine.
+ * behaves identically everywhere. Only title, category, condition, price and
+ * location are required; length limits are intentionally not enforced.
  */
 export const listingDraftSchema = z
   .object({
-    title: z.string().trim().min(6, "El título es muy corto").max(90),
-    description: z.string().trim().min(20, "Contá un poco más del producto").max(4000),
-    category: z.enum(Object.keys(CATEGORIES) as [CategorySlug, ...CategorySlug[]]),
+    title: z.string().trim().min(1, "Escribí un título"),
+    description: z.string().trim().default(""),
+    category: z.enum(Object.keys(CATEGORIES) as [CategorySlug, ...CategorySlug[]], { error: "Elegí una categoría" }),
     condition: z.enum(Object.keys(CONDITIONS) as [Condition, ...Condition[]]),
     priceAmount: z.number().int().positive("Poné un precio"),
     currency: currencyEnum,
     country: countryEnum.default("PY"),
     region: z.string().trim().min(2, "Elegí una opción"),
     city: z.string().trim().min(2, "Escribí la ciudad"),
-    defects: z.string().trim().max(1000).optional(),
-    accessories: z.string().trim().max(1000).optional(),
+    defects: z.string().trim().optional(),
+    accessories: z.string().trim().optional(),
     attributes: z.record(z.string(), z.string()).default({}),
     photoCount: z.number().int().min(0).max(12),
   })
   .superRefine((d, ctx) => {
-    for (const key of CATEGORIES[d.category].required) {
-      if (!d.attributes[key]?.trim()) {
-        ctx.addIssue({ code: "custom", path: ["attributes", key], message: `Falta: ${key}` });
-      }
-    }
     if (!(COUNTRIES[d.country].regions as readonly string[]).includes(d.region)) {
       ctx.addIssue({ code: "custom", path: ["region"], message: `${COUNTRIES[d.country].regionLabel} inválido` });
     }

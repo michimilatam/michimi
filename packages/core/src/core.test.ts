@@ -67,9 +67,14 @@ describe("listing draft", () => {
   it("accepts a complete phone listing", () => {
     expect(listingDraftSchema.safeParse(base).success).toBe(true);
   });
-  it("requires category fields", () => {
-    const r = listingDraftSchema.safeParse({ ...base, attributes: { marca: "Apple" } });
-    expect(r.success).toBe(false);
+  it("brand and other detail fields are optional", () => {
+    expect(listingDraftSchema.safeParse({ ...base, attributes: {} }).success).toBe(true);
+  });
+  it("short title and empty description are allowed", () => {
+    expect(listingDraftSchema.safeParse({ ...base, title: "Bici", description: "" }).success).toBe(true);
+  });
+  it("category must be chosen", () => {
+    expect(listingDraftSchema.safeParse({ ...base, category: "" }).success).toBe(false);
   });
   it("rejects a foreign currency in Paraguay", () => {
     expect(listingDraftSchema.safeParse({ ...base, currency: "BRL" }).success).toBe(false);

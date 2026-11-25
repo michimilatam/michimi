@@ -14,7 +14,7 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
   const router = useRouter();
   const [country, setCountry] = useState<CountryCode>(initialCountry);
   const [region, setRegion] = useState<string>(COUNTRIES[initialCountry].regions[0]);
-  const [category, setCategory] = useState<CategorySlug>("celulares");
+  const [category, setCategory] = useState<CategorySlug | "">("");
   const [currency, setCurrency] = useState<CurrencyCode>(COUNTRIES[initialCountry].local);
   const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -38,12 +38,15 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
     e.preventDefault();
     const f = new FormData(e.currentTarget);
     const attributes: Record<string, string> = {};
-    for (const k of CATEGORIES[category].required) attributes[k] = String(f.get(`attr_${k}`) ?? "");
+    for (const k of category ? CATEGORIES[category].fields : []) {
+      const v = String(f.get(`attr_${k}`) ?? "").trim();
+      if (v) attributes[k] = v;
+    }
     const price = parseMoney(String(f.get("price") ?? ""), currency);
     const parsed = listingDraftSchema.safeParse({
       title: String(f.get("title") ?? ""),
       description: String(f.get("description") ?? ""),
-      category,
+      category: category || undefined,
       condition: String(f.get("condition")),
       priceAmount: price?.amount ?? 0,
       currency,
@@ -136,9 +139,11 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
         </div>
         <div>
           <label className="label" htmlFor="category">Categoría</label>
-          <select id="category" value={category} onChange={(e) => setCategory(e.target.value as CategorySlug)} className="field">
-            {Object.entries(CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+          <select id="category" value={category} onChange={(e) => setCategory(e.target.value as CategorySlug)} className={`field ${category ? "" : "text-ink-soft"}`}>
+            <option value="" disabled>Elegí una categoría</option>
+            {Object.entries(CATEGORIES).map(([k, v]) => <option key={k} value={k} className="text-ink">{v.label}</option>)}
           </select>
+          {err("category")}
         </div>
         <div>
           <label className="label" htmlFor="condition">Estado</label>
@@ -146,10 +151,10 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
             {Object.entries(CONDITIONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </div>
-        {CATEGORIES[category].required.map((k) => (
+        {category && CATEGORIES[category].fields.map((k) => (
           <div key={k}>
-            <label className="label" htmlFor={`attr_${k}`}>{FIELD_LABEL[k] ?? k}</label>
-            <input id={`attr_${k}`} name={`attr_${k}`} className="field" />{err(`attributes.${k}`)}
+            <label className="label" htmlFor={`attr_${k}`}>{FIELD_LABEL[k] ?? k} <span className="font-normal">(opcional)</span></label>
+            <input id={`attr_${k}`} name={`attr_${k}`} className="field" />
           </div>
         ))}
 
@@ -182,7 +187,7 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
         </div>
 
         <div className="sm:col-span-2">
-          <label className="label" htmlFor="description">Descripción</label>
+          <label className="label" htmlFor="description">Descripción <span className="font-normal">(opcional)</span></label>
           <textarea id="description" name="description" rows={5} className="field h-auto py-2" />{err("description")}
         </div>
         <div className="sm:col-span-2">

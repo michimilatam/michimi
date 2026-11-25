@@ -26,7 +26,7 @@ function Chips<T extends string>({ options, value, onChange }: { options: [T, st
 export default function Publicar() {
   const { user } = useSession();
   const [photos, setPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
-  const [category, setCategory] = useState<CategorySlug>("celulares");
+  const [category, setCategory] = useState<CategorySlug | "">("");
   const [condition, setCondition] = useState<Condition>("muy_bueno");
   const [currency, setCurrency] = useState<CurrencyCode>("PYG");
   const [region, setRegion] = useState<string>(COUNTRIES.PY.regions[0]);
@@ -46,9 +46,12 @@ export default function Publicar() {
 
   async function submit() {
     const attributes: Record<string, string> = {};
-    for (const k of CATEGORIES[category].required) attributes[k] = f[`attr_${k}`] ?? "";
+    for (const k of category ? CATEGORIES[category].fields : []) {
+      const v = (f[`attr_${k}`] ?? "").trim();
+      if (v) attributes[k] = v;
+    }
     const parsed = listingDraftSchema.safeParse({
-      title: f.title ?? "", description: f.description ?? "", category, condition,
+      title: f.title ?? "", description: f.description ?? "", category: category || undefined, condition,
       priceAmount: parseMoney(f.price ?? "", currency)?.amount ?? 0, currency, country: "PY",
       region, city: f.city ?? "", defects: f.defects || undefined, accessories: f.accessories || undefined, attributes, photoCount: photos.length,
     });
@@ -84,9 +87,10 @@ export default function Publicar() {
       <E k="photoCount" />
       <TextInput placeholder="Título (ej.: iPhone 13 128 GB)" style={s.field} onChangeText={set("title")} /><E k="title" />
       <Text style={s.soft}>Categoría</Text>
-      <Chips options={Object.entries(CATEGORIES).map(([k, v]) => [k as CategorySlug, v.label])} value={category} onChange={setCategory} />
-      {CATEGORIES[category].required.map((k) => (
-        <View key={k}><TextInput placeholder={FIELD_LABEL[k] ?? k} style={s.field} onChangeText={set(`attr_${k}`)} /><E k={`attributes.${k}`} /></View>
+      <Chips<CategorySlug | ""> options={Object.entries(CATEGORIES).map(([k, v]) => [k as CategorySlug, v.label])} value={category} onChange={setCategory} />
+      <E k="category" />
+      {category !== "" && CATEGORIES[category].fields.map((k) => (
+        <TextInput key={k} placeholder={`${FIELD_LABEL[k] ?? k} (opcional)`} style={s.field} onChangeText={set(`attr_${k}`)} />
       ))}
       <Text style={s.soft}>Estado</Text>
       <Chips options={Object.entries(CONDITIONS) as [Condition, string][]} value={condition} onChange={setCondition} />
@@ -98,7 +102,7 @@ export default function Publicar() {
         <Chips options={COUNTRIES.PY.regions.map((r) => [r, r] as [string, string])} value={region} onChange={setRegion} />
       </ScrollView>
       <TextInput placeholder="Ciudad" style={s.field} onChangeText={set("city")} /><E k="city" />
-      <TextInput placeholder="Descripción" multiline style={[s.field, { height: 110, paddingTop: 10 }]} onChangeText={set("description")} /><E k="description" />
+      <TextInput placeholder="Descripción (opcional)" multiline style={[s.field, { height: 110, paddingTop: 10 }]} onChangeText={set("description")} /><E k="description" />
       <TextInput placeholder="Defectos visibles" style={s.field} onChangeText={set("defects")} />
       <TextInput placeholder="Accesorios incluidos" style={s.field} onChangeText={set("accessories")} />
       <E k="form" />
