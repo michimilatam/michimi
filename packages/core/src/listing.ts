@@ -38,17 +38,21 @@ export const listingDraftSchema = z
     priceAmount: z.number().int().positive("Poné un precio"),
     currency: currencyEnum,
     country: countryEnum.default("PY"),
-    city: z.string().trim().min(2),
+    region: z.string().trim().min(2, "Elegí una opción"),
+    city: z.string().trim().min(2, "Escribí la ciudad"),
     defects: z.string().trim().max(1000).optional(),
     accessories: z.string().trim().max(1000).optional(),
     attributes: z.record(z.string(), z.string()).default({}),
-    photoCount: z.number().int().min(3, "Subí al menos 3 fotos desde distintos ángulos").max(12),
+    photoCount: z.number().int().min(0).max(12),
   })
   .superRefine((d, ctx) => {
     for (const key of CATEGORIES[d.category].required) {
       if (!d.attributes[key]?.trim()) {
         ctx.addIssue({ code: "custom", path: ["attributes", key], message: `Falta: ${key}` });
       }
+    }
+    if (!(COUNTRIES[d.country].regions as readonly string[]).includes(d.region)) {
+      ctx.addIssue({ code: "custom", path: ["region"], message: `${COUNTRIES[d.country].regionLabel} inválido` });
     }
     const local = COUNTRIES[d.country].local;
     if (d.currency !== local && d.currency !== "USD") {

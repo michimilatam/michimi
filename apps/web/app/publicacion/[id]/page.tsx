@@ -8,6 +8,7 @@ import { photoUrl } from "@/lib/photo";
 import { ContactButtons } from "./ContactButtons";
 
 type P = Promise<{ id: string }>;
+type SP = Promise<{ fotos_fallidas?: string }>;
 
 async function load(id: string) {
   const supabase = await supabaseServer();
@@ -25,8 +26,9 @@ export async function generateMetadata({ params }: { params: P }): Promise<Metad
   return { title: l.title, description: l.description.slice(0, 150) };
 }
 
-export default async function Publicacion({ params }: { params: P }) {
+export default async function Publicacion({ params, searchParams }: { params: P; searchParams: SP }) {
   const { id } = await params;
+  const { fotos_fallidas } = await searchParams;
   const { supabase, l } = await load(id);
   if (!l) notFound();
   const { data: auth } = await supabase.auth.getUser();
@@ -40,7 +42,9 @@ export default async function Publicacion({ params }: { params: P }) {
 
   return (
     <article className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 content-start">
+        {fotos_fallidas && <p className="col-span-2 rounded-xl bg-warn/10 p-3 text-sm text-warn">La publicación se creó, pero {fotos_fallidas} foto(s) no se pudieron subir.</p>}
+        {photos.length === 0 && <div className="col-span-2 flex aspect-[4/3] items-center justify-center rounded-xl bg-line text-ink-soft">Sin fotos todavía</div>}
         {photos.map((p: { path: string }, i: number) => (
           <img key={p.path} src={photoUrl(p.path)} alt={`${l.title} — foto ${i + 1}`} className={`w-full rounded-xl object-cover ${i === 0 ? "col-span-2 aspect-[4/3]" : "aspect-square"}`} />
         ))}
@@ -48,7 +52,7 @@ export default async function Publicacion({ params }: { params: P }) {
 
       <div className="space-y-5">
         <div>
-          <p className="text-sm text-ink-soft">{CATEGORIES[l.category as CategorySlug]?.label} · {l.city}</p>
+          <p className="text-sm text-ink-soft">{CATEGORIES[l.category as CategorySlug]?.label} · {l.city}{l.region ? `, ${l.region}` : ""}</p>
           <h1 className="text-2xl font-bold">{l.title}</h1>
           <p className="mt-2 text-3xl font-bold tabular-nums">{formatMoney({ amount: l.price_amount, currency: l.currency as CurrencyCode })}</p>
           <p className="mt-1 text-sm">

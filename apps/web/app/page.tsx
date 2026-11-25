@@ -1,25 +1,30 @@
 import Link from "next/link";
-import { CATEGORIES, CONDITIONS } from "@michimi/core";
+import { CATEGORIES, CONDITIONS, COUNTRIES, CURRENCIES, currenciesFor, flag } from "@michimi/core";
 import { supabaseServer } from "@/lib/supabase/server";
+import { currentCountry } from "@/lib/country";
 import { ListingCard, type ListingCardData } from "@/components/ListingCard";
 
-type SP = Promise<{ q?: string; cat?: string; cond?: string; cur?: string; orden?: string }>;
+type SP = Promise<{ q?: string; cat?: string; cond?: string; cur?: string; orden?: string; region?: string }>;
 
 export default async function Home({ searchParams }: { searchParams: SP }) {
   const sp = await searchParams;
+  const country = await currentCountry();
+  const c = COUNTRIES[country];
   const supabase = await supabaseServer();
   let query = supabase
     .from("listings")
-    .select("id,title,price_amount,currency,condition,city,status,listing_photos(path,position)")
-    .eq("country", "PY")
+    .select("id,title,price_amount,currency,condition,city,region,status,listing_photos(path,position)")
+    .eq("country", country)
     .in("status", ["activa", "reservada"])
     .limit(48);
   if (sp.q) query = query.textSearch("search", sp.q, { type: "websearch", config: "spanish" });
+  if (sp.region) query = query.eq("region", sp.region);
   if (sp.cat) query = query.eq("category", sp.cat);
   if (sp.cond) query = query.eq("condition", sp.cond);
   if (sp.cur) query = query.eq("currency", sp.cur);
   query = sp.orden === "precio" ? query.order("price_amount") : query.order("created_at", { ascending: false });
   const { data, error } = await query;
+  const local = c.local;
 
   return (
     <div className="grid gap-6 md:grid-cols-[220px_1fr]">
@@ -27,10 +32,17 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
         <form className="space-y-4">
           {sp.q && <input type="hidden" name="q" value={sp.q} />}
           <div>
+            <label className="label" htmlFor="region">{c.regionLabel}</label>
+            <select id="region" name="region" defaultValue={sp.region ?? ""} className="field">
+              <option value="">Todo {c.name}</option>
+              {c.regions.map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+          <div>
             <label className="label" htmlFor="cat">Categoría</label>
             <select id="cat" name="cat" defaultValue={sp.cat ?? ""} className="field">
               <option value="">Todas</option>
-              {Object.entries(CATEGORIES).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}
+              {Object.entries(CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
             </select>
           </div>
           <div>
@@ -43,9 +55,8 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
           <div>
             <label className="label" htmlFor="cur">Moneda</label>
             <select id="cur" name="cur" defaultValue={sp.cur ?? ""} className="field">
-              <option value="">₲ y US$</option>
-              <option value="PYG">Guaraníes (₲)</option>
-              <option value="USD">Dólares (US$)</option>
+              <option value="">{CURRENCIES[local].symbol} y US$</option>
+              {currenciesFor(country).map((k) => <option key={k} value={k}>{CURRENCIES[k].label} ({CURRENCIES[k].symbol})</option>)}
             </select>
           </div>
           <div>
@@ -61,7 +72,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
 
       <section>
         <h1 className="mb-4 text-2xl font-bold">
-          {sp.q ? <>Resultados para “{sp.q}”</> : "Publicaciones en Paraguay"}
+          {sp.q ? <>Resultados para “{sp.q}”</> : <><span aria-hidden="true">{flag(country)}</span> Publicaciones en {sp.region ?? c.name}</>}
         </h1>
         {error && <p className="text-bad">No pudimos cargar las publicaciones. Probá de nuevo en un momento.</p>}
         {data && data.length === 0 && (

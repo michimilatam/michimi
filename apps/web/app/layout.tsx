@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import "./globals.css";
 import { supabaseServer } from "@/lib/supabase/server";
+import { currentCountry } from "@/lib/country";
+import { CountryPicker } from "@/components/CountryPicker";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.michimi.com"),
@@ -16,14 +18,16 @@ export const viewport: Viewport = { themeColor: "#111111" };
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const supabase = await supabaseServer();
   const { data } = await supabase.auth.getUser();
+  const country = await currentCountry();
   return (
     <html lang="es-PY">
       <body className="min-h-dvh">
         <header className="sticky top-0 z-20 bg-ink text-white">
-          <nav className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4">
+          <nav className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4">
             <Link href="/" aria-label="Michimi, inicio" className="shrink-0">
               <img src="/logo-horizontal-oscuro.svg" alt="Michimi" className="h-8 w-auto" />
             </Link>
+            <CountryPicker current={country} />
             <form action="/" className="flex-1">
               <input
                 name="q"

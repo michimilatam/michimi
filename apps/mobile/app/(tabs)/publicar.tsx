@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import { CATEGORIES, CONDITIONS, CURRENCIES, currenciesFor, listingDraftSchema, parseMoney, type CategorySlug, type Condition, type CurrencyCode } from "@michimi/core";
+import { CATEGORIES, CONDITIONS, COUNTRIES, CURRENCIES, currenciesFor, listingDraftSchema, parseMoney, type CategorySlug, type Condition, type CurrencyCode } from "@michimi/core";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/useSession";
 import { Button } from "@/components/ui";
@@ -29,7 +29,8 @@ export default function Publicar() {
   const [category, setCategory] = useState<CategorySlug>("celulares");
   const [condition, setCondition] = useState<Condition>("muy_bueno");
   const [currency, setCurrency] = useState<CurrencyCode>("PYG");
-  const [f, setF] = useState<Record<string, string>>({ city: "Asunción" });
+  const [region, setRegion] = useState<string>(COUNTRIES.PY.regions[0]);
+  const [f, setF] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const set = (k: string) => (v: string) => setF((x) => ({ ...x, [k]: v }));
@@ -49,7 +50,7 @@ export default function Publicar() {
     const parsed = listingDraftSchema.safeParse({
       title: f.title ?? "", description: f.description ?? "", category, condition,
       priceAmount: parseMoney(f.price ?? "", currency)?.amount ?? 0, currency, country: "PY",
-      city: f.city ?? "", defects: f.defects || undefined, accessories: f.accessories || undefined, attributes, photoCount: photos.length,
+      region, city: f.city ?? "", defects: f.defects || undefined, accessories: f.accessories || undefined, attributes, photoCount: photos.length,
     });
     if (!parsed.success) {
       const m: Record<string, string> = {};
@@ -60,7 +61,7 @@ export default function Publicar() {
     const d = parsed.data;
     const { data: listing, error } = await supabase.from("listings").insert({
       seller_id: user!.id, title: d.title, description: d.description, category: d.category, condition: d.condition,
-      price_amount: d.priceAmount, currency: d.currency, country: d.country, city: d.city, defects: d.defects, accessories: d.accessories, attributes: d.attributes,
+      price_amount: d.priceAmount, currency: d.currency, country: d.country, region: d.region, city: d.city, defects: d.defects, accessories: d.accessories, attributes: d.attributes,
     }).select("id").single();
     if (error || !listing) { setBusy(false); return setErrors({ form: error?.message ?? "No se pudo publicar" }); }
     for (const [i, p] of photos.entries()) {
@@ -78,7 +79,7 @@ export default function Publicar() {
   return (
     <ScrollView style={s.screen} contentContainerStyle={s.pad} keyboardShouldPersistTaps="handled">
       <Text style={s.h1}>Publicá gratis</Text>
-      <Button title={photos.length ? `${photos.length} fotos · cambiar` : "Elegir fotos (mínimo 3)"} kind="ghost" onPress={pick} />
+      <Button title={photos.length ? `${photos.length} fotos · cambiar` : "＋ Agregar fotos (opcional)"} kind="ghost" onPress={pick} />
       <ScrollView horizontal>{photos.map((p) => <Image key={p.uri} source={{ uri: p.uri }} style={{ width: 72, height: 72, borderRadius: 8, marginRight: 6 }} />)}</ScrollView>
       <E k="photoCount" />
       <TextInput placeholder="Título (ej.: iPhone 13 128 GB)" style={s.field} onChangeText={set("title")} /><E k="title" />
@@ -92,7 +93,11 @@ export default function Publicar() {
       <Text style={s.soft}>Moneda</Text>
       <Chips options={currenciesFor("PY").map((k) => [k, `${CURRENCIES[k].symbol} ${k}`])} value={currency} onChange={setCurrency} />
       <TextInput placeholder={currency === "PYG" ? "Precio (1.500.000)" : "Precio (350)"} keyboardType="decimal-pad" style={s.field} onChangeText={set("price")} /><E k="priceAmount" />
-      <TextInput placeholder="Ciudad" defaultValue="Asunción" style={s.field} onChangeText={set("city")} />
+      <Text style={s.soft}>{COUNTRIES.PY.regionLabel}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <Chips options={COUNTRIES.PY.regions.map((r) => [r, r] as [string, string])} value={region} onChange={setRegion} />
+      </ScrollView>
+      <TextInput placeholder="Ciudad" style={s.field} onChangeText={set("city")} /><E k="city" />
       <TextInput placeholder="Descripción" multiline style={[s.field, { height: 110, paddingTop: 10 }]} onChangeText={set("description")} /><E k="description" />
       <TextInput placeholder="Defectos visibles" style={s.field} onChangeText={set("defects")} />
       <TextInput placeholder="Accesorios incluidos" style={s.field} onChangeText={set("accessories")} />

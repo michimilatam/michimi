@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatMoney, parseMoney, summarize, isRatingVisible, listingDraftSchema, currenciesFor } from "./index";
+import { flag, formatMoney, parseMoney, summarize, isRatingVisible, listingDraftSchema, currenciesFor } from "./index";
 
 describe("money", () => {
   it("formats guaraníes without decimals", () => {
@@ -24,6 +24,13 @@ describe("money", () => {
   });
 });
 
+describe("countries", () => {
+  it("flag emoji", () => { expect(flag("PY")).toBe("🇵🇾"); });
+  it("region must belong to country", () => {
+    expect(listingDraftSchema.safeParse({ ...baseDraft, region: "Córdoba" }).success).toBe(false);
+  });
+});
+
 describe("reputation", () => {
   it("one 5-star rating does not beat a long 4.8 track record", () => {
     const one = summarize([5]);
@@ -42,8 +49,7 @@ describe("reputation", () => {
   });
 });
 
-describe("listing draft", () => {
-  const base = {
+const baseDraft = {
     title: "iPhone 13 128GB azul",
     description: "Impecable, siempre con funda y vidrio templado. Batería original.",
     category: "celulares" as const,
@@ -51,10 +57,13 @@ describe("listing draft", () => {
     priceAmount: 3_500_000,
     currency: "PYG" as const,
     country: "PY" as const,
+    region: "Asunción",
     city: "Asunción",
-    photoCount: 4,
+    photoCount: 0,
     attributes: { marca: "Apple", modelo: "iPhone 13", bateria_pct: "88" },
   };
+describe("listing draft", () => {
+  const base = baseDraft;
   it("accepts a complete phone listing", () => {
     expect(listingDraftSchema.safeParse(base).success).toBe(true);
   });

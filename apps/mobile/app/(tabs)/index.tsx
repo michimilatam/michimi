@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { FlatList, Image, Pressable, RefreshControl, Text, TextInput, View } from "react-native";
+import { FlatList, Image, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from "react-native";
 import { Link } from "expo-router";
-import { CONDITIONS, formatMoney, type Condition, type CurrencyCode } from "@michimi/core";
+import { CONDITIONS, COUNTRIES, COUNTRY_CODES, flag, formatMoney, type CountryCode, type Condition, type CurrencyCode } from "@michimi/core";
 import { photoUrl, supabase } from "@/lib/supabase";
 import { c, s } from "@/lib/theme";
 
@@ -9,6 +9,7 @@ type Row = { id: string; title: string; price_amount: number; currency: Currency
 
 export default function Explorar() {
   const [q, setQ] = useState("");
+  const [country, setCountry] = useState<CountryCode>("PY");
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -16,16 +17,24 @@ export default function Explorar() {
     setLoading(true);
     let query = supabase.from("listings")
       .select("id,title,price_amount,currency,condition,city,status,listing_photos(path,position)")
-      .eq("country", "PY").in("status", ["activa", "reservada"]).order("created_at", { ascending: false }).limit(40);
+      .eq("country", country).in("status", ["activa", "reservada"]).order("created_at", { ascending: false }).limit(40);
     if (q.trim()) query = query.textSearch("search", q.trim(), { type: "websearch", config: "spanish" });
     const { data } = await query;
     setRows((data as Row[]) ?? []);
     setLoading(false);
-  }, [q]);
-  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [q, country]);
+  useEffect(() => { load(); }, [country]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <View style={s.screen}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingHorizontal: 12, paddingTop: 10 }} style={{ flexGrow: 0 }}>
+        {COUNTRY_CODES.map((k) => (
+          <Pressable key={k} onPress={() => setCountry(k)} accessibilityRole="radio" accessibilityState={{ selected: country === k }}
+            style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: country === k ? c.ink : c.card, borderWidth: 1, borderColor: country === k ? c.ink : c.line }}>
+            <Text style={{ color: country === k ? c.lima : c.ink, fontWeight: "600" }}>{flag(k)} {COUNTRIES[k].name}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
       <View style={{ padding: 12 }}>
         <TextInput value={q} onChangeText={setQ} onSubmitEditing={load} returnKeyType="search"
           placeholder="Buscá celulares, muebles, herramientas…" style={s.field} accessibilityLabel="Buscar" />
