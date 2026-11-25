@@ -28,8 +28,13 @@ export async function generateMetadata({ params }: { params: P }): Promise<Metad
   const { l } = await load((await params).id);
   if (!l) return {};
   const cover = [...(l.listing_photos ?? [])].sort((a: { position: number }, b: { position: number }) => a.position - b.position)[0];
-  const description = (l.description || `${l.title} en Michimi`).slice(0, 150);
-  return { title: l.title, description, openGraph: { title: l.title, description, ...(cover ? { images: [photoUrl(cover.path)] } : {}) } };
+  const price = formatPrice({ priceType: l.price_type, amount: l.price_amount, currency: l.currency }, (a) => formatMoney({ amount: a, currency: l.currency as CurrencyCode }));
+  const where = [l.city, l.region].filter(Boolean).join(", ");
+  const title = `${l.title} – ${price} en ${l.city}`;
+  const description = `${l.title} en ${where}. ${price}. ${(l.description || "").slice(0, 110)} Contactá ${l.kind === "servicio" ? "al profesional" : "al vendedor"} por chat en Michimi.`.trim();
+  return { title, description, alternates: { canonical: `/publicacion/${l.id}` },
+    robots: l.status === "pausada" ? { index: false } : undefined,
+    openGraph: { title, description, ...(cover ? { images: [photoUrl(cover.path)] } : {}) } };
 }
 
 export default async function Publicacion({ params, searchParams }: { params: P; searchParams: SP }) {
@@ -50,6 +55,22 @@ export default async function Publicacion({ params, searchParams }: { params: P;
 
   return (
     <article className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(svc ? {
+        "@context": "https://schema.org", "@type": "Service", name: l.title, description: l.description || l.title,
+        serviceType: subcategoryLabel(l.category, l.subcategory) ?? "Servicio",
+        areaServed: (l.coverage_regions?.length ? l.coverage_regions : [l.region ?? l.city]).map((a: string) => ({ "@type": "AdministrativeArea", name: a })),
+        provider: { "@type": "Person", name: l.seller.display_name },
+        ...(photos[0] ? { image: photos.map((p: { path: string }) => photoUrl(p.path)) } : {}),
+        ...(l.price_amount ? { offers: { "@type": "Offer", price: (l.price_amount / 10 ** (l.currency === "PYG" ? 0 : 2)).toString(), priceCurrency: l.currency } } : {}),
+      } : {
+        "@context": "https://schema.org", "@type": "Product", name: l.title, description: l.description || l.title,
+        category: subcategoryLabel(l.category, l.subcategory) ?? CATEGORIES[l.category as CategorySlug]?.label,
+        ...(photos[0] ? { image: photos.map((p: { path: string }) => photoUrl(p.path)) } : {}),
+        offers: { "@type": "Offer", url: `https://www.michimi.com/publicacion/${l.id}`, price: ((l.price_amount ?? 0) / 10 ** (l.currency === "PYG" ? 0 : 2)).toString(), priceCurrency: l.currency,
+          itemCondition: l.condition === "nuevo" ? "https://schema.org/NewCondition" : "https://schema.org/UsedCondition",
+          availability: l.status === "activa" ? "https://schema.org/InStock" : "https://schema.org/SoldOut",
+          areaServed: l.city, seller: { "@type": "Person", name: l.seller.display_name } },
+      }) }} />
       <div className="grid grid-cols-2 gap-2 content-start">
         {fotos_fallidas && <p className="col-span-2 rounded-xl bg-warn/10 p-3 text-sm text-warn">La publicación se creó, pero {fotos_fallidas} foto(s) no se pudieron subir.</p>}
         {photos.length === 0 && <div className="col-span-2 flex aspect-[4/3] items-center justify-center rounded-xl bg-line text-ink-soft">Sin fotos todavía</div>}

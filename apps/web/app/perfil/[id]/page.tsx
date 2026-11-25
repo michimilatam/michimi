@@ -4,6 +4,7 @@ import { RoleReputation } from "@/components/Reputation";
 import { ListingCard, type ListingCardData } from "@/components/ListingCard";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import Link from "next/link";
+import { EmailToggle } from "@/components/EmailToggle";
 
 export default async function Perfil({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -35,6 +36,7 @@ export default async function Perfil({ params }: { params: Promise<{ id: string 
       </header>
 
       {p.bio && <p className="max-w-2xl whitespace-pre-line text-[15px]">{p.bio}</p>}
+      {mine && <EmailToggle userId={id} initial={p.email_notifications ?? true} />}
       {mine && p.professional_status !== "verificado" && (
         <Link href="/verificacion" className="block rounded-card border border-line bg-card p-4 hover:border-ink">
           <p className="font-semibold">{p.professional_status === "pendiente" ? "Tu verificación está en revisión" : "¿Ofrecés servicios? Verificate como profesional"}</p>

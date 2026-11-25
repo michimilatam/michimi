@@ -45,6 +45,34 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </nav>
         </header>
         <main className="mx-auto max-w-6xl px-4 py-4 md:py-6">{children}</main>
+        <nav aria-label="Búsquedas populares" className="mx-auto max-w-6xl border-t border-line px-4 pt-8 text-sm">
+          <div className="grid gap-6 sm:grid-cols-3">
+            <div>
+              <p className="mb-2 font-semibold">Servicios populares</p>
+              <ul className="space-y-1 text-ink-soft">
+                {[["electricistas","Electricistas"],["plomeria-y-gas","Plomeros"],["aire-acondicionado-y-refrigeracion","Técnicos de aire acondicionado"],["mudanzas-y-fletes","Mudanzas y fletes"],["clases-particulares","Clases particulares"]].map(([s, l]) => (
+                  <li key={s}><a href={`/servicios/${s}/asuncion`} className="hover:underline">{l} en Asunción</a></li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <p className="mb-2 font-semibold">Categorías</p>
+              <ul className="space-y-1 text-ink-soft">
+                {[["vehiculos","Autos y motos"],["celulares","Celulares"],["muebles","Hogar y muebles"],["electrodomesticos","Electrodomésticos"],["alimentos","Alimentos y bebidas"]].map(([s, l]) => (
+                  <li key={s}><a href={`/productos/${s}`} className="hover:underline">{l} en venta</a></li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <p className="mb-2 font-semibold">Por departamento</p>
+              <ul className="space-y-1 text-ink-soft">
+                {["asuncion","central","alto-parana","itapua","caaguazu"].map((r) => (
+                  <li key={r}><a href={`/servicios/${r}`} className="hover:underline">Servicios en {r === "asuncion" ? "Asunción" : r === "alto-parana" ? "Alto Paraná" : r === "itapua" ? "Itapúa" : r === "caaguazu" ? "Caaguazú" : "Central"}</a></li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </nav>
         <footer className="mx-auto max-w-6xl px-4 py-10 text-sm text-ink-soft">
           Michimi · Comprá y vendé entre personas, con la confianza de una plataforma que está de tu lado.
           <span className="mt-3 flex flex-wrap items-center gap-4">

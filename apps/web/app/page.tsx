@@ -66,6 +66,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
 
   return (
     <div className="space-y-3 md:space-y-5">
+      <h1 className="sr-only">{servicios ? `Servicios y profesionales en ${c.name}` : `Compra y venta de productos usados y nuevos en ${c.name}`}</h1>
 
       {servicios && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-line bg-card px-3 py-2 text-sm">
