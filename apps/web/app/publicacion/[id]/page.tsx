@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Fragment } from "react";
 import { notFound } from "next/navigation";
-import { CATEGORIES, CONDITIONS, subcategoryLabel, formatMoney, summarize, BADGE_LABEL, type CategorySlug, type Condition, type CurrencyCode } from "@michimi/core";
+import { CATEGORIES, CONDITIONS, subcategoryLabel, formatMoney, formatPrice, summarize, BADGE_LABEL, type CategorySlug, type Condition, type CurrencyCode } from "@michimi/core";
 import { supabaseServer } from "@/lib/supabase/server";
 import { photoUrl } from "@/lib/photo";
 import { ContactButtons } from "./ContactButtons";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 type P = Promise<{ id: string }>;
 type SP = Promise<{ fotos_fallidas?: string }>;
@@ -14,7 +15,7 @@ async function load(id: string) {
   const supabase = await supabaseServer();
   const { data } = await supabase
     .from("listings")
-    .select("*, listing_photos(path,position), seller:profiles!listings_seller_id_fkey(id,display_name,avatar_url,created_at,last_active_at)")
+    .select("*, listing_photos(path,position), seller:profiles!listings_seller_id_fkey(id,display_name,avatar_url,created_at,last_active_at,profession,professional_status)")
     .eq("id", id)
     .maybeSingle();
   return { supabase, l: data };
@@ -23,7 +24,7 @@ async function load(id: string) {
 export async function generateMetadata({ params }: { params: P }): Promise<Metadata> {
   const { l } = await load((await params).id);
   if (!l) return {};
-  return { title: l.title, description: l.description.slice(0, 150) };
+  return { title: l.title, description: (l.description ?? "").slice(0, 150) };
 }
 
 export default async function Publicacion({ params, searchParams }: { params: P; searchParams: SP }) {
@@ -38,6 +39,7 @@ export default async function Publicacion({ params, searchParams }: { params: P;
   const photos = [...l.listing_photos].sort((a: { position: number }, b: { position: number }) => a.position - b.position);
   const attrs = Object.entries((l.attributes ?? {}) as Record<string, string>);
   const isOwner = auth.user?.id === l.seller_id;
+  const svc = l.kind === "servicio";
   const days = Math.floor((Date.now() - new Date(l.availability_confirmed_at).getTime()) / 86_400_000);
 
   return (
@@ -54,14 +56,25 @@ export default async function Publicacion({ params, searchParams }: { params: P;
         <div>
           <p className="text-sm text-ink-soft">{CATEGORIES[l.category as CategorySlug]?.label}{subcategoryLabel(l.category, l.subcategory) ? ` › ${subcategoryLabel(l.category, l.subcategory)}` : ""} · {l.city}{l.region ? `, ${l.region}` : ""}</p>
           <h1 className="text-2xl font-bold">{l.title}</h1>
-          <p className="mt-2 text-3xl font-bold tabular-nums">{formatMoney({ amount: l.price_amount, currency: l.currency as CurrencyCode })}</p>
+          <p className="mt-2 text-3xl font-bold tabular-nums">{formatPrice({ priceType: l.price_type, amount: l.price_amount, currency: l.currency }, (a) => formatMoney({ amount: a, currency: l.currency as CurrencyCode }))}</p>
           <p className="mt-1 text-sm">
-            <span className="rounded-full bg-ink px-2 py-0.5 text-lima">{CONDITIONS[l.condition as Condition]}</span>
+            {!svc && <span className="rounded-full bg-ink px-2 py-0.5 text-lima">{CONDITIONS[l.condition as Condition]}</span>}
             <span className="ml-2 text-ink-soft">Disponibilidad confirmada {days === 0 ? "hoy" : `hace ${days} días`}</span>
           </p>
         </div>
 
         {/* Publicación transparente: qué afirma, qué demuestra, qué falta verificar */}
+        {svc ? (
+        <section className="rounded-card border border-line bg-card p-4 text-[15px]">
+          <h2 className="font-semibold">El servicio</h2>
+          <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+            <dt className="text-ink-soft">Atiende en</dt><dd>{(l.coverage_regions?.length ? l.coverage_regions : [l.region ?? l.city]).join(", ")}</dd>
+            {l.schedule && (<><dt className="text-ink-soft">Horario</dt><dd>{l.schedule}</dd></>)}
+            <dt className="text-ink-soft">Trabajos</dt><dd>{rep?.sales_completed ?? 0} completados en Michimi</dd>
+          </dl>
+          <p className="mt-3 text-sm text-ink-soft">Acordá el precio por chat. Cuando aceptes el presupuesto, recibís un PIN: dáselo al profesional solo cuando el trabajo esté terminado.</p>
+        </section>
+        ) : (
         <section className="rounded-card border border-line bg-card p-4 text-[15px]">
           <h2 className="font-semibold">Ficha</h2>
           <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
@@ -72,24 +85,26 @@ export default async function Publicacion({ params, searchParams }: { params: P;
           <p className="mt-3 text-sm"><b>Defectos declarados:</b> {l.defects || "El vendedor no declaró defectos."}</p>
           <p className="mt-1 text-sm text-warn">Sin verificar por Michimi: funcionamiento y estado. Revisalo al retirar, antes de dar tu PIN.</p>
         </section>
+        )}
 
-        <ContactButtons listingId={l.id} currency={l.currency} price={l.price_amount} isOwner={isOwner} loggedIn={!!auth.user} status={l.status} />
+        <ContactButtons service={svc} listingId={l.id} currency={l.currency} price={l.price_amount} isOwner={isOwner} loggedIn={!!auth.user} status={l.status} />
 
         <Link href={`/perfil/${l.seller.id}`} className="flex items-center gap-3 rounded-card border border-line bg-card p-4">
           {l.seller.avatar_url ? <img src={l.seller.avatar_url} alt="" className="h-12 w-12 rounded-full" /> : <div className="h-12 w-12 rounded-full bg-line" />}
           <div>
-            <p className="font-semibold">{l.seller.display_name}</p>
+            <p className="flex items-center gap-1.5 font-semibold">{l.seller.display_name}{l.seller.professional_status === "verificado" && <VerifiedBadge label />}</p>
+            {svc && l.seller.profession && <p className="text-sm">{l.seller.profession}</p>}
             <p className="text-sm text-ink-soft">
-              Vendedor: {r.count ? `${r.score.toFixed(1)}★` : "sin calificaciones"} · {BADGE_LABEL[r.badge]} · {rep?.sales_completed ?? 0} ventas
+              {svc ? "Profesional" : "Vendedor"}: {r.count ? `${r.score.toFixed(1)}★` : "sin calificaciones"} · {BADGE_LABEL[r.badge]} · {rep?.sales_completed ?? 0} {svc ? "trabajos" : "ventas"}
             </p>
             <p className="text-xs text-ink-soft">En Michimi desde {new Date(l.seller.created_at).toLocaleDateString("es-PY", { month: "long", year: "numeric" })}</p>
           </div>
         </Link>
 
-        <section>
+        {l.description && <section>
           <h2 className="font-semibold">Descripción</h2>
           <p className="mt-1 whitespace-pre-line text-[15px] leading-relaxed">{l.description}</p>
-        </section>
+        </section>}
       </div>
     </article>
   );

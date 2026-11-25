@@ -18,6 +18,11 @@ export const RATING_CRITERIA = {
     comunicacion: "Respondió rápido y claro",
     puntualidad: "Cumplió lo acordado (hora, lugar)",
   },
+  provider: {
+    calidad: "Buena calidad del trabajo",
+    precio_respetado: "Respetó el precio acordado",
+    puntualidad: "Llegó y terminó a tiempo",
+  },
   buyer: {
     compromiso: "Cumplió la oferta que hizo",
     comunicacion: "Respondió rápido y claro",

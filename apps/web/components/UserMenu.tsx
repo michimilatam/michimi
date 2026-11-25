@@ -42,6 +42,8 @@ export function UserMenu({ userId, name, avatar }: { userId: string; name: strin
           <Link role="menuitem" href={`/perfil/${userId}`} onClick={() => setOpen(false)} className="block px-4 py-2.5 text-[15px] hover:bg-paper">Mi perfil y reputación</Link>
           <Link role="menuitem" href="/mensajes" onClick={() => setOpen(false)} className="block px-4 py-2.5 text-[15px] hover:bg-paper">Mensajes</Link>
           <Link role="menuitem" href="/publicar" onClick={() => setOpen(false)} className="block px-4 py-2.5 text-[15px] hover:bg-paper">Publicar</Link>
+          <Link role="menuitem" href="/pedidos" onClick={() => setOpen(false)} className="block px-4 py-2.5 text-[15px] hover:bg-paper">Pedidos de presupuesto</Link>
+          <Link role="menuitem" href="/verificacion" onClick={() => setOpen(false)} className="block px-4 py-2.5 text-[15px] hover:bg-paper">Verificación profesional</Link>
           <button role="menuitem" onClick={signOut} disabled={busy} className="block w-full border-t border-line px-4 py-2.5 text-left text-[15px] text-bad hover:bg-paper">
             {busy ? "Cerrando sesión…" : "Cerrar sesión"}
           </button>

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { RATING_CRITERIA } from "@michimi/core";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
-export function OperationActions(props: { id: string; role: "buyer" | "seller"; status: string; pin: string | null; alreadyRated: boolean }) {
+export function OperationActions(props: { service?: boolean; id: string; role: "buyer" | "seller"; status: string; pin: string | null; alreadyRated: boolean }) {
   const router = useRouter();
   const [pin, setPin] = useState("");
   const [err, setErr] = useState<string | null>(null);
@@ -61,7 +61,7 @@ export function OperationActions(props: { id: string; role: "buyer" | "seller"; 
   if (props.status === "completada" && !props.alreadyRated) {
     return (
       <section className="space-y-4 rounded-card border border-line bg-card p-4">
-        <h2 className="text-lg font-semibold">Calificá al {ratedRole === "seller" ? "vendedor" : "comprador"}</h2>
+        <h2 className="text-lg font-semibold">Calificá al {ratedRole === "seller" ? (props.service ? "profesional" : "vendedor") : (props.service ? "cliente" : "comprador")}</h2>
         <div className="flex gap-1" role="radiogroup" aria-label="Puntaje">
           {[1, 2, 3, 4, 5].map((n) => (
             <button key={n} role="radio" aria-checked={score === n} aria-label={`${n} estrellas`} onClick={() => setScore(n)}
@@ -69,7 +69,7 @@ export function OperationActions(props: { id: string; role: "buyer" | "seller"; 
           ))}
         </div>
         <fieldset className="space-y-1">
-          {Object.entries(RATING_CRITERIA[ratedRole]).map(([k, label]) => (
+          {Object.entries(RATING_CRITERIA[ratedRole === "seller" && props.service ? "provider" : ratedRole]).map(([k, label]) => (
             <label key={k} className="flex items-center gap-2 text-[15px]">
               <input type="checkbox" checked={!!criteria[k]} onChange={(e) => setCriteria({ ...criteria, [k]: e.target.checked })} />
               {label}

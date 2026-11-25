@@ -5,6 +5,7 @@ import { ConversationList, type ProductGroup } from "./ConversationList";
 type Row = {
   id: string; buyer_id: string; seller_id: string; created_at: string;
   listing: { id: string; title: string; status: string; listing_photos: { path: string; position: number }[] } | null;
+  request: { id: string; title: string; status: string } | null;
   buyer: { display_name: string; avatar_url: string | null } | null;
   seller: { display_name: string; avatar_url: string | null } | null;
 };
@@ -18,7 +19,7 @@ export default async function MensajesLayout({ children }: { children: React.Rea
 
   const { data: convs } = await supabase
     .from("conversations")
-    .select("id,buyer_id,seller_id,created_at,listing:listings(id,title,status,listing_photos(path,position)),buyer:profiles!conversations_buyer_id_fkey(display_name,avatar_url),seller:profiles!conversations_seller_id_fkey(display_name,avatar_url)")
+    .select("id,buyer_id,seller_id,created_at,listing:listings(id,title,status,listing_photos(path,position)),request:service_requests(id,title,status),buyer:profiles!conversations_buyer_id_fkey(display_name,avatar_url),seller:profiles!conversations_seller_id_fkey(display_name,avatar_url)")
     .limit(200);
   const rows = (convs as unknown as Row[] | null) ?? [];
   const ids = rows.map((r) => r.id);
@@ -39,13 +40,15 @@ export default async function MensajesLayout({ children }: { children: React.Rea
   // Agrupar por producto. Un vendedor puede tener varias conversaciones (una por interesado) en el mismo producto.
   const groups = new Map<string, ProductGroup>();
   for (const r of rows) {
-    if (!r.listing) continue;
+    const subject = r.listing ?? (r.request ? { ...r.request, listing_photos: [] } : null);
+    if (!subject) continue;
+    const key = r.listing ? r.listing.id : `pedido-${r.request!.id}`;
     const imSeller = r.seller_id === me;
     const other = imSeller ? r.buyer : r.seller;
     const l = last.get(r.id);
-    const cover = [...r.listing.listing_photos].sort((a, b) => a.position - b.position)[0]?.path ?? null;
-    const g = groups.get(r.listing.id) ?? {
-      listingId: r.listing.id, title: r.listing.title, status: r.listing.status, cover, role: imSeller ? "vendo" : "compro",
+    const cover = [...subject.listing_photos].sort((a, b) => a.position - b.position)[0]?.path ?? null;
+    const g = groups.get(key) ?? {
+      listingId: key, title: r.request ? `Pedido: ${subject.title}` : subject.title, status: subject.status, cover, role: imSeller ? "vendo" : "compro",
       lastAt: "", unread: 0, conversations: [],
     };
     const item = {
@@ -59,7 +62,7 @@ export default async function MensajesLayout({ children }: { children: React.Rea
     g.conversations.push(item);
     g.unread += item.unread;
     if (item.at > g.lastAt) g.lastAt = item.at;
-    groups.set(r.listing.id, g);
+    groups.set(key, g);
   }
   const list = [...groups.values()]
     .map((g) => ({ ...g, conversations: g.conversations.sort((a, b) => b.at.localeCompare(a.at)) }))

@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  CATEGORIES, CONDITIONS, FIELD_LABEL, COUNTRIES, COUNTRY_CODES, CURRENCIES, currenciesFor, flag, listingDraftSchema, parseMoney,
+  CATEGORIES, CONDITIONS, FIELD_LABEL, PRICE_TYPES, type PriceType, type ListingKind, COUNTRIES, COUNTRY_CODES, CURRENCIES, currenciesFor, flag, listingDraftSchema, parseMoney,
   type CategorySlug, type CountryCode, type CurrencyCode,
 } from "@michimi/core";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -10,11 +10,14 @@ import { isImageFile, prepareImage } from "@/lib/image";
 
 const MAX_PHOTOS = 12;
 
-export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }) {
+export function PublicarForm({ initialCountry, initialKind = "producto" }: { initialCountry: CountryCode; initialKind?: ListingKind }) {
   const router = useRouter();
+  const [kind, setKindState] = useState<ListingKind>(initialKind);
+  const [priceType, setPriceType] = useState<PriceType>("fijo");
+  const [coverage, setCoverage] = useState<string[]>([]);
   const [country, setCountry] = useState<CountryCode>(initialCountry);
   const [region, setRegion] = useState<string>(COUNTRIES[initialCountry].regions[0]);
-  const [category, setCategory] = useState<CategorySlug | "">("");
+  const [category, setCategory] = useState<CategorySlug | "">(initialKind === "servicio" ? "servicios" : "");
   const [subcategory, setSubcategory] = useState("");
   const [currency, setCurrency] = useState<CurrencyCode>(COUNTRIES[initialCountry].local);
   const [files, setFiles] = useState<File[]>([]);
@@ -27,7 +30,14 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
   const previews = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files]);
   useEffect(() => () => previews.forEach((u) => URL.revokeObjectURL(u)), [previews]);
 
+  function setKind(k: ListingKind) {
+    setKindState(k);
+    setSubcategory("");
+    setCategory(k === "servicio" ? "servicios" : "");
+    if (k === "producto") setPriceType("fijo");
+  }
   function changeCountry(c: CountryCode) {
+    setCoverage([]);
     setCountry(c);
     setRegion(COUNTRIES[c].regions[0]);
     setCurrency(COUNTRIES[c].local);
@@ -65,8 +75,12 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
       description: String(f.get("description") ?? ""),
       category: category || undefined,
       subcategory,
-      condition: String(f.get("condition")),
-      priceAmount: price?.amount ?? 0,
+      kind,
+      condition: kind === "producto" ? String(f.get("condition")) : undefined,
+      priceType,
+      priceAmount: priceType === "presupuesto" ? undefined : price?.amount || undefined,
+      coverageRegions: kind === "servicio" ? coverage : [],
+      schedule: String(f.get("schedule") ?? "") || undefined,
       currency,
       country,
       region,
@@ -92,8 +106,9 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
     const { data: listing, error } = await supabase
       .from("listings")
       .insert({
-        seller_id: u.user.id, title: d.title, description: d.description, category: d.category, subcategory: d.subcategory, condition: d.condition,
-        price_amount: d.priceAmount, currency: d.currency, country: d.country, region: d.region, city: d.city,
+        seller_id: u.user.id, title: d.title, description: d.description, category: d.category, subcategory: d.subcategory, condition: d.condition ?? null,
+        kind: d.kind, price_type: d.priceType, coverage_regions: d.coverageRegions, schedule: d.schedule ?? null,
+        price_amount: d.priceAmount ?? null, currency: d.currency, country: d.country, region: d.region, city: d.city,
         defects: d.defects, accessories: d.accessories, attributes: d.attributes,
       })
       .select("id")
@@ -118,12 +133,20 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
   return (
     <form onSubmit={onSubmit} className="mx-auto max-w-2xl space-y-6" noValidate>
       <header>
-        <h1 className="text-3xl font-bold">Publicá gratis</h1>
-        <p className="text-ink-soft">Las publicaciones con fotos y datos completos se venden más rápido.</p>
+        <h1 className="text-3xl font-bold">{kind === "servicio" ? "Ofrecé tu servicio gratis" : "Publicá gratis"}</h1>
+        <p className="text-ink-soft">{kind === "servicio" ? "Mostrá trabajos anteriores y dónde atendés: así te eligen." : "Las publicaciones con fotos y datos completos se venden más rápido."}</p>
       </header>
+      <div className="flex max-w-sm gap-1 rounded-full border border-line bg-card p-1" role="radiogroup" aria-label="Qué publicás">
+        {(["producto", "servicio"] as const).map((k) => (
+          <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(k)}
+            className={`flex-1 rounded-full px-4 py-2 text-[15px] font-semibold ${kind === k ? "bg-ink text-lima" : "text-ink-soft hover:text-ink"}`}>
+            {k === "producto" ? "Un producto" : "Un servicio"}
+          </button>
+        ))}
+      </div>
 
       <section className="space-y-3">
-        <p className="label">Fotos <span className="font-normal">(opcional, hasta {MAX_PHOTOS})</span></p>
+        <p className="label">{kind === "servicio" ? "Fotos de trabajos realizados" : "Fotos"} <span className="font-normal">(opcional, hasta {MAX_PHOTOS})</span></p>
         <label
           htmlFor="photos"
           onDragOver={(e) => e.preventDefault()}
@@ -154,18 +177,18 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <label className="label" htmlFor="title">Título</label>
-          <input id="title" name="title" className="field" placeholder="Ej.: iPhone 13 128 GB azul" />{err("title")}
+          <input id="title" name="title" className="field" placeholder={kind === "servicio" ? "Ej.: Electricista matriculado, instalaciones y reparaciones" : "Ej.: iPhone 13 128 GB azul"} />{err("title")}
         </div>
-        <div>
+        {kind === "producto" && <div>
           <label className="label" htmlFor="category">Categoría</label>
           <select id="category" value={category} onChange={(e) => { setCategory(e.target.value as CategorySlug); setSubcategory(""); }} className={`field ${category ? "" : "text-ink-soft"}`}>
             <option value="" disabled>Elegí una categoría</option>
-            {Object.entries(CATEGORIES).map(([k, v]) => <option key={k} value={k} className="text-ink">{v.label}</option>)}
+            {Object.entries(CATEGORIES).filter(([k]) => k !== "servicios").map(([k, v]) => <option key={k} value={k} className="text-ink">{v.label}</option>)}
           </select>
           {err("category")}
-        </div>
+        </div>}
         <div>
-          <label className="label" htmlFor="subcategory">Subcategoría</label>
+          <label className="label" htmlFor="subcategory">{kind === "servicio" ? "Tipo de servicio" : "Subcategoría"}</label>
           <select id="subcategory" value={subcategory} disabled={!category} onChange={(e) => setSubcategory(e.target.value)}
             className={`field disabled:opacity-50 ${subcategory ? "" : "text-ink-soft"}`}>
             <option value="" disabled>{category ? "Elegí una subcategoría" : "Primero elegí la categoría"}</option>
@@ -173,13 +196,20 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
           </select>
           {err("subcategory")}
         </div>
-        <div>
-          <label className="label" htmlFor="condition">Estado</label>
-          <select id="condition" name="condition" className="field" defaultValue="muy_bueno">
-            {Object.entries(CONDITIONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-          </select>
-        </div>
-        {category && CATEGORIES[category].fields.map((k) => (
+        {kind === "producto" ? (
+          <div>
+            <label className="label" htmlFor="condition">Estado</label>
+            <select id="condition" name="condition" className="field" defaultValue="muy_bueno">
+              {Object.entries(CONDITIONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </div>
+        ) : (
+          <div>
+            <label className="label" htmlFor="schedule">Horario de atención <span className="font-normal">(opcional)</span></label>
+            <input id="schedule" name="schedule" className="field" placeholder="Ej.: Lun a sáb, 7 a 18 h" />
+          </div>
+        )}
+        {kind === "producto" && category && CATEGORIES[category].fields.map((k) => (
           <div key={k}>
             <label className="label" htmlFor={`attr_${k}`}>{FIELD_LABEL[k] ?? k} <span className="font-normal">(opcional)</span></label>
             <input id={`attr_${k}`} name={`attr_${k}`} className="field" />
@@ -193,7 +223,7 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
           </select>
         </div>
         <div>
-          <label className="label" htmlFor="region">{c.regionLabel}</label>
+          <label className="label" htmlFor="region">{kind === "servicio" ? `Tu ${c.regionLabel.toLowerCase()}` : c.regionLabel}</label>
           <select id="region" value={region} onChange={(e) => setRegion(e.target.value)} className="field">
             {c.regions.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
@@ -203,8 +233,30 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
           <label className="label" htmlFor="city">Ciudad</label>
           <input id="city" name="city" className="field" placeholder={country === "PY" ? "Ej.: Fernando de la Mora" : "Ciudad"} />{err("city")}
         </div>
-        <div>
-          <label className="label" htmlFor="price">Precio</label>
+        {kind === "servicio" && (
+          <fieldset className="sm:col-span-2">
+            <legend className="label">¿Dónde atendés? <span className="font-normal">(si no marcás, solo en tu {c.regionLabel.toLowerCase()})</span></legend>
+            <div className="flex flex-wrap gap-2">
+              {c.regions.map((r) => {
+                const on = coverage.includes(r);
+                return (
+                  <button key={r} type="button" aria-pressed={on} onClick={() => setCoverage((p) => on ? p.filter((x) => x !== r) : [...p, r])}
+                    className={`rounded-full border px-3 py-1 text-sm ${on ? "border-ink bg-ink text-lima" : "border-line bg-card hover:border-ink"}`}>{r}</button>
+                );
+              })}
+            </div>
+          </fieldset>
+        )}
+        {kind === "servicio" && (
+          <div>
+            <label className="label" htmlFor="priceType">Cómo cobrás</label>
+            <select id="priceType" value={priceType} onChange={(e) => setPriceType(e.target.value as PriceType)} className="field">
+              {Object.entries(PRICE_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </div>
+        )}
+        {priceType !== "presupuesto" && <div>
+          <label className="label" htmlFor="price">{priceType === "hora" ? "Precio por hora" : priceType === "desde" ? "Precio desde" : "Precio"}</label>
           <div className="flex gap-2">
             <select aria-label="Moneda" value={currency} onChange={(e) => setCurrency(e.target.value as CurrencyCode)} className="field w-28">
               {currenciesFor(country).map((k) => <option key={k} value={k}>{CURRENCIES[k].symbol} {k}</option>)}
@@ -212,12 +264,13 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
             <input id="price" name="price" inputMode="decimal" className="field" placeholder={CURRENCIES[currency].decimals === 0 ? "1.500.000" : "350"} />
           </div>
           {err("priceAmount")}{err("currency")}
-        </div>
+        </div>}
 
         <div className="sm:col-span-2">
           <label className="label" htmlFor="description">Descripción <span className="font-normal">(opcional)</span></label>
           <textarea id="description" name="description" rows={5} className="field h-auto py-2" />{err("description")}
         </div>
+        {kind === "producto" && <>
         <div className="sm:col-span-2">
           <label className="label" htmlFor="defects">Defectos visibles (ser honesto evita reclamos)</label>
           <input id="defects" name="defects" className="field" placeholder="Ej.: rayón leve en el borde" />
@@ -226,9 +279,10 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
           <label className="label" htmlFor="accessories">Accesorios incluidos</label>
           <input id="accessories" name="accessories" className="field" placeholder="Ej.: caja, cargador original" />
         </div>
+        </>}
       </div>
       {err("form")}
-      <button disabled={busy || processing > 0} className="btn-primary w-full">{busy ? progress ?? "Publicando…" : "Publicar"}</button>
+      <button disabled={busy || processing > 0} className="btn-primary w-full">{busy ? progress ?? "Publicando…" : kind === "servicio" ? "Publicar servicio" : "Publicar"}</button>
     </form>
   );
 }

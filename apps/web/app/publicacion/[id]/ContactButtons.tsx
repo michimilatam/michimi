@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { formatMoney, parseMoney, type CurrencyCode } from "@michimi/core";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
-export function ContactButtons(props: { listingId: string; currency: string; price: number; isOwner: boolean; loggedIn: boolean; status: string }) {
+export function ContactButtons(props: { service?: boolean; listingId: string; currency: string; price: number | null; isOwner: boolean; loggedIn: boolean; status: string }) {
   const router = useRouter();
   const [offering, setOffering] = useState(false);
   const [value, setValue] = useState("");
@@ -12,7 +12,14 @@ export function ContactButtons(props: { listingId: string; currency: string; pri
   const cur = props.currency as CurrencyCode;
 
   if (props.isOwner) return <p className="rounded-xl bg-line/60 p-3 text-sm">Es tu publicación. Las ofertas te llegan a Mensajes.</p>;
-  if (props.status !== "activa") return <p className="rounded-xl bg-line/60 p-3 text-sm">Este producto está reservado por otro comprador.</p>;
+  if (props.status !== "activa") return <p className="rounded-xl bg-line/60 p-3 text-sm">{props.service ? "Este servicio no está disponible ahora." : "Este producto está reservado por otro comprador."}</p>;
+  if (props.service) return (
+    <div className="space-y-2">
+      <button onClick={() => go(false)} className="btn-primary w-full">Pedir presupuesto por chat</button>
+      {err && <p className="text-sm text-bad">{err}</p>}
+      <p className="text-xs text-ink-soft">Contale qué necesitás. El profesional te manda el presupuesto y vos lo aceptás desde el chat.</p>
+    </div>
+  );
 
   async function go(withOffer: boolean) {
     if (!props.loggedIn) return router.push(`/ingresar?next=/publicacion/${props.listingId}`);
@@ -33,7 +40,7 @@ export function ContactButtons(props: { listingId: string; currency: string; pri
     <div className="space-y-2">
       {offering ? (
         <div className="flex gap-2">
-          <input autoFocus inputMode="decimal" className="field" placeholder={formatMoney({ amount: props.price, currency: cur })} value={value} onChange={(e) => setValue(e.target.value)} aria-label="Tu oferta" />
+          <input autoFocus inputMode="decimal" className="field" placeholder={props.price ? formatMoney({ amount: props.price, currency: cur }) : "Tu oferta"} value={value} onChange={(e) => setValue(e.target.value)} aria-label="Tu oferta" />
           <button onClick={() => go(true)} className="btn-primary shrink-0">Enviar oferta</button>
         </div>
       ) : (

@@ -1,13 +1,14 @@
 import Link from "next/link";
-import { CONDITIONS, formatMoney, type Condition, type CurrencyCode } from "@michimi/core";
+import { CONDITIONS, formatMoney, formatPrice, type Condition, type CurrencyCode } from "@michimi/core";
 import { photoUrl } from "@/lib/photo";
 
 export interface ListingCardData {
   id: string;
   title: string;
-  price_amount: number;
+  price_amount: number | null;
+  price_type?: string;
   currency: CurrencyCode;
-  condition: Condition;
+  condition: Condition | null;
   city: string;
   region?: string | null;
   status: string;
@@ -29,9 +30,9 @@ export function ListingCard({ l }: { l: ListingCardData }) {
         )}
       </div>
       <div className="p-3">
-        <p className="text-lg font-bold tabular-nums">{formatMoney({ amount: l.price_amount, currency: l.currency })}</p>
+        <p className="text-lg font-bold tabular-nums">{formatPrice({ priceType: l.price_type, amount: l.price_amount, currency: l.currency }, (a) => formatMoney({ amount: a, currency: l.currency }))}</p>
         <p className="line-clamp-2 text-[15px] group-hover:underline">{l.title}</p>
-        <p className="mt-1 text-xs text-ink-soft">{CONDITIONS[l.condition]} · {l.city}{l.region && l.region !== l.city ? `, ${l.region}` : ""}</p>
+        <p className="mt-1 text-xs text-ink-soft">{l.condition ? `${CONDITIONS[l.condition]} · ` : ""}{l.city}{l.region && l.region !== l.city ? `, ${l.region}` : ""}</p>
       </div>
     </Link>
   );
