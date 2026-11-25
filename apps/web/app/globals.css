@@ -1,0 +1,29 @@
+@import "tailwindcss";
+@import "@fontsource-variable/outfit";
+
+/* Tokens Michimi — ver DESIGN.md. Superficie clara para que las fotos de producto
+   manden; el lima es acción, nunca decoración. */
+@theme {
+  --font-sans: "Outfit Variable", ui-sans-serif, system-ui, sans-serif;
+  --color-ink: #111111;
+  --color-ink-soft: #4a4a45;
+  --color-paper: #fafaf7;
+  --color-card: #ffffff;
+  --color-line: #e7e6df;
+  --color-lima: #c6f432;
+  --color-lima-deep: #9bc41a;
+  --color-ok: #1f7a4d;
+  --color-warn: #a65a00;
+  --color-bad: #b42318;
+  --radius-card: 14px;
+}
+
+html { background: var(--color-paper); color: var(--color-ink); }
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+:focus-visible { outline: 3px solid var(--color-ink); outline-offset: 2px; border-radius: 6px; }
+
+@utility btn-base { display:inline-flex; align-items:center; justify-content:center; gap:.5rem; border-radius:9999px; padding-inline:1.25rem; height:2.75rem; font-weight:600; font-size:15px; transition:background-color .15s, border-color .15s; &:disabled { opacity:.5; } }
+@utility btn-primary { @apply btn-base bg-lima text-ink hover:bg-lima-deep; }
+@utility btn-ghost { @apply btn-base border border-line bg-card hover:border-ink; }
+@utility field { @apply w-full h-11 rounded-xl border border-line bg-card px-3 text-[15px] outline-none focus:border-ink; }
+@utility label { @apply block text-sm font-medium text-ink-soft mb-1; }
