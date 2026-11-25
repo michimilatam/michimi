@@ -10,6 +10,8 @@ export default async function Operacion({ params }: { params: Promise<{ id: stri
   const { data: u } = await supabase.auth.getUser();
   const { data: op } = await supabase.from("operations").select("*, listing:listings(title,kind), request:service_requests(title)").eq("id", id).maybeSingle();
   if (!op || !u.user) notFound();
+  const { data: off } = await supabase.from("offers").select("conversation_id").eq("id", op.offer_id).maybeSingle();
+  const conv = off?.conversation_id as string | undefined;
   const service = !!op.request_id || op.listing?.kind === "servicio";
   const role = op.buyer_id === u.user.id ? "buyer" : "seller";
   const [{ data: pin }, { data: myRating }] = await Promise.all([
@@ -47,6 +49,12 @@ export default async function Operacion({ params }: { params: Promise<{ id: stri
         </section>
       )}
 
+      {op.status === "cancelada" && conv && (
+        <a href={`/mensajes/${conv}`} className="block rounded-card border border-line bg-card p-4 hover:border-ink">
+          <p className="font-semibold">¿Querés retomarla?</p>
+          <p className="text-sm text-ink-soft">Volvé al chat y mandá {service ? "un nuevo presupuesto" : "una nueva oferta"}. Si la otra parte la acepta, se genera una operación nueva con otro PIN.</p>
+        </a>
+      )}
       <OperationActions service={service} id={id} role={role} status={op.status} pin={pin?.pin ?? null} alreadyRated={!!myRating} />
     </div>
   );

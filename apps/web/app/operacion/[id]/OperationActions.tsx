@@ -86,7 +86,7 @@ export function OperationActions(props: { service?: boolean; id: string; role: "
 
   return (
     <p className="rounded-xl bg-line/60 p-3 text-[15px]">
-      {props.status === "completada" ? "Operación completada. ¡Gracias por calificar!" : "Operación cancelada. El producto volvió a estar disponible."}
+      {props.status === "completada" ? "Operación completada. ¡Gracias por calificar!" : (props.service ? "Operación cancelada. El pedido o servicio volvió a quedar abierto." : "Operación cancelada. El producto volvió a estar disponible.")}
     </p>
   );
 }

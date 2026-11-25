@@ -133,7 +133,14 @@ export function Chat(props: {
         </Link>
       </header>
 
-      {props.operation && (
+      {props.operation?.status === "cancelada" && (
+        <div className="flex flex-wrap items-center justify-between gap-2 bg-line/70 px-4 py-2 text-sm">
+          <span>La operación anterior se canceló. Pueden retomarla con {svc ? "un nuevo presupuesto" : "una nueva oferta"}.</span>
+          <button onClick={() => { const last = [...offers].reverse().find((o) => o.status === "aceptada"); setCounter({ parent: null, value: last ? String(last.amount / (cur === "PYG" ? 1 : 100)) : "" }); }}
+            className="rounded-full bg-lima px-3 py-1 font-semibold text-ink">{svc ? (props.role === "vendo" ? "Enviar de nuevo" : "Proponer de nuevo") : "Proponer de nuevo"}</button>
+        </div>
+      )}
+      {props.operation && props.operation.status !== "cancelada" && (
         <Link href={`/operacion/${props.operation.id}`} className="flex items-center justify-between bg-lima px-4 py-2 text-sm font-semibold">
           <span>Operación {props.operation.status}</span><span>Ver PIN, entrega y calificación →</span>
         </Link>
@@ -193,7 +200,7 @@ export function Chat(props: {
           </div>
         )}
         <div className="mb-2 flex gap-2 overflow-x-auto">
-          {!counter && !props.operation && ((svc && props.role === "vendo") || (!svc && props.role === "compro")) && (
+          {!counter && (!props.operation || props.operation.status === "cancelada") && ((svc && props.role === "vendo") || (!svc && props.role === "compro")) && (
             <button onClick={() => setCounter({ parent: null, value: "" })} className="shrink-0 rounded-full bg-lima px-3 py-1 text-sm font-semibold text-ink">{svc ? "Enviar presupuesto" : "Hacer oferta"}</button>
           )}
           {QUICK[svc ? "servicio" : "producto"][props.role].map((q) => <button key={q} onClick={() => send(q)} className="shrink-0 rounded-full border border-line bg-paper px-3 py-1 text-sm hover:border-ink">{q}</button>)}
