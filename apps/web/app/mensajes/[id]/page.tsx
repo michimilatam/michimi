@@ -8,7 +8,7 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
   const { data: u } = await supabase.auth.getUser();
   const { data: c } = await supabase
     .from("conversations")
-    .select("*, listing:listings(id,title,kind,currency,price_amount,status,listing_photos(path,position)),request:service_requests(id,title,status,currency), buyer:profiles!conversations_buyer_id_fkey(id,display_name,avatar_url,professional_status), seller:profiles!conversations_seller_id_fkey(id,display_name,avatar_url,professional_status)")
+    .select("*, listing:listings(id,title,kind,currency,price_amount,status,listing_photos(path,position)),request:service_requests(id,title,status,currency), buyer:profiles!conversations_buyer_id_fkey(id,display_name,avatar_url,professional_status,created_at), seller:profiles!conversations_seller_id_fkey(id,display_name,avatar_url,professional_status,created_at)")
     .eq("id", id)
     .maybeSingle();
   if (!c || !u.user) notFound();
@@ -18,6 +18,7 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
     (c.listing ? supabase.from("operations").select("id,status").eq("listing_id", c.listing.id) : supabase.from("operations").select("id,status").eq("request_id", c.request.id)).eq("buyer_id", c.buyer_id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
   const imSeller = c.seller_id === u.user.id;
+  const { data: blk } = await supabase.from("blocks").select("blocked_id").eq("blocker_id", u.user.id).eq("blocked_id", imSeller ? c.buyer_id : c.seller_id).maybeSingle();
   const other = imSeller ? c.buyer : c.seller;
   const subject = c.listing ?? { id: c.request.id, title: `Pedido: ${c.request.title}`, currency: c.request.currency ?? "PYG", price_amount: null, status: c.request.status === "abierto" ? "activa" : "reservada", listing_photos: [], href: `/pedidos/${c.request.id}` };
   const cover = [...(subject.listing_photos ?? [])].sort((a: { position: number }, b: { position: number }) => a.position - b.position)[0]?.path ?? null;
@@ -26,11 +27,12 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
       key={id}
       me={u.user.id}
       role={imSeller ? "vendo" : "compro"}
-      other={{ id: other.id, name: other.display_name, avatar: other.avatar_url, verified: other.professional_status === "verificado" }}
+      other={{ id: other.id, name: other.display_name, avatar: other.avatar_url, verified: other.professional_status === "verificado", isNew: Date.now() - new Date(other.created_at).getTime() < 7 * 86_400_000 }}
       conversation={{ id, buyerId: c.buyer_id, listing: { ...subject, cover } }}
       initialMessages={messages ?? []}
       initialOffers={offers ?? []}
       operation={op}
+      blockedByMe={!!blk}
       service={!c.listing || c.listing.kind === "servicio"}
     />
   );

@@ -2,7 +2,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatMoney, parseMoney, type CurrencyCode } from "@michimi/core";
+import { formatMoney, parseMoney, riskFlags, RISK_LABEL, type CurrencyCode, type RiskFlag } from "@michimi/core";
+import { ChatMenu } from "./ChatMenu";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { photoUrl } from "@/lib/photo";
@@ -22,13 +23,16 @@ const OFFER_STATUS: Record<string, string> = { pendiente: "Pendiente", aceptada:
 export function Chat(props: {
   me: string;
   role: "vendo" | "compro";
-  other: { id: string; name: string; avatar: string | null; verified?: boolean };
+  other: { id: string; name: string; avatar: string | null; verified?: boolean; isNew?: boolean };
   conversation: { id: string; buyerId: string; listing: { id: string; title: string; currency: string; price_amount: number | null; status: string; cover: string | null; href?: string } };
   initialMessages: Msg[];
   initialOffers: Offer[];
   operation: { id: string; status: string } | null;
   service?: boolean;
+  blockedByMe?: boolean;
 }) {
+  const [warnSend, setWarnSend] = useState<RiskFlag[] | null>(null);
+  const [blocked, setBlocked] = useState(!!props.blockedByMe);
   const svc = !!props.service;
   const word = svc ? "presupuesto" : "oferta";
   const router = useRouter();
@@ -67,8 +71,11 @@ export function Chat(props: {
       .then(() => { window.dispatchEvent(new Event(READ_EVENT)); });
   }, [convId, messages.length]);
 
-  async function send(body: string) {
+  async function send(body: string, force = false) {
     if (!body.trim() || sending) return;
+    const flags = riskFlags(body);
+    if (!force && flags.length) return setWarnSend(flags);
+    setWarnSend(null);
     setSending(true);
     setErr(null);
     const { data, error } = await supabaseBrowser()
@@ -110,9 +117,10 @@ export function Chat(props: {
         </Link>
         <div className="min-w-0 flex-1">
           <Link href={`/perfil/${props.other.id}`} className="flex items-center gap-1 truncate font-semibold hover:underline">{props.other.name}{props.other.verified && <VerifiedBadge size={16} />}</Link>
-          <p className="truncate text-xs text-ink-soft">{svc ? (props.role === "vendo" ? "Cliente" : "Profesional") : (props.role === "vendo" ? "Le interesa tu producto" : "Vendedor")}</p>
+          <p className="truncate text-xs text-ink-soft">{svc ? (props.role === "vendo" ? "Cliente" : "Profesional") : (props.role === "vendo" ? "Le interesa tu producto" : "Vendedor")}{props.other.isNew && <span className="ml-1.5 rounded-full bg-warn/15 px-1.5 text-warn">Cuenta nueva</span>}</p>
         </div>
-        <Link href={l.href ?? `/publicacion/${l.id}`} className="flex max-w-[45%] items-center gap-2 rounded-xl border border-line px-2 py-1.5 hover:border-ink">
+        <ChatMenu conversationId={convId} otherId={props.other.id} otherName={props.other.name} blocked={blocked} onBlocked={setBlocked} />
+        <Link href={l.href ?? `/publicacion/${l.id}`} className="flex max-w-[40%] items-center gap-2 rounded-xl border border-line px-2 py-1.5 hover:border-ink">
           <span className="h-9 w-9 shrink-0 overflow-hidden rounded-md bg-line">
             {l.cover && <img src={photoUrl(l.cover)} alt="" className="h-full w-full object-cover" />}
           </span>
@@ -160,6 +168,9 @@ export function Chat(props: {
               <span className={`ml-2 align-bottom text-[10px] ${mine ? "text-white/60" : "text-ink-soft"}`}>
                 {new Date(m.created_at).toLocaleTimeString("es-PY", { hour: "2-digit", minute: "2-digit" })}
               </span>
+              {!mine && riskFlags(m.body).map((f) => (
+                <span key={f} className="mt-2 block whitespace-normal rounded-lg bg-warn/15 px-2 py-1.5 text-xs font-medium text-warn">⚠ {RISK_LABEL[f]}</span>
+              ))}
             </li>
           );
         })}
@@ -185,7 +196,18 @@ export function Chat(props: {
           )}
           {QUICK[svc ? "servicio" : "producto"][props.role].map((q) => <button key={q} onClick={() => send(q)} className="shrink-0 rounded-full border border-line bg-paper px-3 py-1 text-sm hover:border-ink">{q}</button>)}
         </div>
-        <form onSubmit={(e) => { e.preventDefault(); send(text); }} className="flex gap-2">
+        {warnSend && (
+          <div className="mb-2 rounded-xl border border-warn/40 bg-warn/10 p-3 text-sm">
+            <p className="font-semibold">Revisá antes de enviar</p>
+            <ul className="mt-1 list-disc pl-5">{warnSend.map((f) => <li key={f}>{RISK_LABEL[f]}</li>)}</ul>
+            <div className="mt-2 flex gap-2">
+              <button type="button" onClick={() => setWarnSend(null)} className="btn-primary h-9 px-4 text-sm">Editar mensaje</button>
+              <button type="button" onClick={() => send(text, true)} className="btn-ghost h-9 px-4 text-sm">Enviar igual</button>
+            </div>
+          </div>
+        )}
+        {blocked && <p className="mb-2 rounded-xl bg-line/60 p-3 text-sm">Bloqueaste a esta persona: no puede escribirte ni vos a ella. Podés desbloquearla desde el menú ⋯.</p>}
+        <form onSubmit={(e) => { e.preventDefault(); send(text); }} className="flex gap-2" hidden={blocked}>
           <input value={text} onChange={(e) => setText(e.target.value)} className="field" placeholder="Escribí un mensaje" aria-label="Mensaje" />
           <button disabled={sending || !text.trim()} className="btn-primary shrink-0">Enviar</button>
         </form>

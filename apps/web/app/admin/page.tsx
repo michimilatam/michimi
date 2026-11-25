@@ -88,6 +88,8 @@ async function Denuncias() {
     .select("*, listing:listings(id,title,status), reporter:profiles!reports_reporter_id_fkey(display_name), reported:profiles!reports_reported_user_id_fkey(id,display_name)")
     .order("created_at", { ascending: false }).limit(100);
   if (!data?.length) return <p className="rounded-card border border-dashed border-line p-8 text-center text-ink-soft">No hay denuncias.</p>;
+  const convIds = [...new Set(data.map((r) => r.conversation_id).filter(Boolean))] as string[];
+  const { data: msgs } = convIds.length ? await supabase.from("messages").select("conversation_id,sender_id,body,kind,created_at").in("conversation_id", convIds).order("created_at", { ascending: false }).limit(300) : { data: [] };
   return (
     <ul className="space-y-3">
       {data.map((r) => (
@@ -98,6 +100,18 @@ async function Denuncias() {
               {r.listing && <Link href={`/publicacion/${r.listing.id}`} className="block truncate text-sm underline">{r.listing.title} ({r.listing.status})</Link>}
               {r.reported && <Link href={`/perfil/${r.reported.id}`} className="text-sm text-ink-soft hover:underline">Denunciado: {r.reported.display_name}</Link>}
               {r.details && <p className="mt-1 text-sm">“{r.details}”</p>}
+              {r.conversation_id && (
+                <details className="mt-2 text-sm">
+                  <summary className="cursor-pointer underline">Ver conversación denunciada</summary>
+                  <ol className="mt-2 max-h-64 space-y-1 overflow-y-auto rounded-lg bg-paper p-2">
+                    {(msgs ?? []).filter((m) => m.conversation_id === r.conversation_id).reverse().map((m, i) => (
+                      <li key={i} className={m.sender_id === r.reported_user_id ? "font-semibold" : "text-ink-soft"}>
+                        <span className="text-xs">{new Date(m.created_at).toLocaleString("es-PY")} · {m.sender_id === r.reported_user_id ? "Denunciado" : m.sender_id ? "Denunciante" : "Sistema"}:</span> {m.body}
+                      </li>
+                    ))}
+                  </ol>
+                </details>
+              )}
               <p className="text-xs text-ink-soft">Por {r.reporter?.display_name} · {new Date(r.created_at).toLocaleString("es-PY")}</p>
             </div>
             <span className="rounded-full border border-line px-2 py-0.5 text-xs">{r.status}</span>

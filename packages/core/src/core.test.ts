@@ -89,3 +89,19 @@ describe("listing draft", () => {
     expect(listingDraftSchema.safeParse({ ...base, currency: "BRL" }).success).toBe(false);
   });
 });
+
+import { riskFlags } from "./safety";
+describe("detector de estafas", () => {
+  it("detecta códigos, links, teléfonos y pagos por adelantado", () => {
+    expect(riskFlags("Pasame el código que te llegó por SMS")).toContain("codigo");
+    expect(riskFlags("mirá acá https://bit.ly/xx")).toContain("link");
+    expect(riskFlags("escribime al 0981 123 456")).toEqual(expect.arrayContaining(["telefono", "fuera_plataforma"]));
+    expect(riskFlags("necesito que me pagues una seña por adelantado")).toContain("pago_adelantado");
+    expect(riskFlags("pasame el número de tarjeta y el cvv")).toContain("datos_sensibles");
+  });
+  it("no molesta en mensajes normales", () => {
+    expect(riskFlags("Hola, ¿sigue disponible? ¿Dónde se puede retirar?")).toEqual([]);
+    expect(riskFlags("Te paso el presupuesto mañana, incluye materiales")).toEqual([]);
+    expect(riskFlags("¿Aceptás transferencia al retirar?")).toEqual([]);
+  });
+});
