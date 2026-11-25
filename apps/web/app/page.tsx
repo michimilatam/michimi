@@ -4,6 +4,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { currentCountry } from "@/lib/country";
 import { ListingCard, type ListingCardData } from "@/components/ListingCard";
 import { ServiceCard, type ServiceCardData } from "@/components/ServiceCard";
+import { SaveSearch } from "@/components/SaveSearch";
 
 type SP = Promise<{ q?: string; cat?: string; sub?: string; cond?: string; cur?: string; orden?: string; region?: string; tipo?: string }>;
 
@@ -30,6 +31,15 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
   if (sp.cur) query = query.eq("currency", sp.cur);
   query = sp.orden === "precio" ? query.order("price_amount", { nullsFirst: false }) : query.order("created_at", { ascending: false });
   const { data, error } = await query;
+
+  const { data: auth } = await supabase.auth.getUser();
+  const favs = new Set<string>();
+  if (auth.user && data?.length) {
+    const { data: f } = await supabase.from("favorites").select("listing_id").eq("user_id", auth.user.id).in("listing_id", data.map((l) => l.id as string));
+    for (const x of f ?? []) favs.add(x.listing_id);
+  }
+  const filters = { tipo: servicios ? "servicio" : "producto", cat: servicios ? "" : sp.cat ?? "", sub: sp.sub ?? "", region: sp.region ?? "", cond: sp.cond ?? "", cur: sp.cur ?? "" };
+  const hasFilter = !!(sp.q || sp.cat || sp.sub || sp.region || sp.cond || sp.cur);
 
   // Reputación de los profesionales (para las tarjetas de servicio)
   const rep = new Map<string, { avg: number | null; count: number; done: number }>();
@@ -122,7 +132,10 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
         </aside>
 
         <section>
-          {sp.q && <h1 className="mb-3 text-xl font-bold">Resultados para “{sp.q}”</h1>}
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            {sp.q ? <h1 className="text-xl font-bold">Resultados para “{sp.q}”</h1> : <span />}
+            {hasFilter && <SaveSearch query={sp.q ?? ""} filters={filters} country={country} loggedIn={!!auth.user} />}
+          </div>
           {error && <p className="text-bad">No pudimos cargar las publicaciones. Probá de nuevo en un momento.</p>}
           {data && data.length === 0 && (
             <div className="rounded-card border border-dashed border-line p-10 text-center">
@@ -133,11 +146,11 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
           )}
           {servicios ? (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {(data as unknown as ServiceCardData[] | null)?.map((l) => <ServiceCard key={l.id} l={l} rep={rep.get(l.seller_id)} />)}
+              {(data as unknown as ServiceCardData[] | null)?.map((l) => <ServiceCard key={l.id} l={l} rep={rep.get(l.seller_id)} faved={auth.user ? favs.has(l.id) : undefined} />)}
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {(data as unknown as ListingCardData[] | null)?.map((l) => <ListingCard key={l.id} l={l} />)}
+              {(data as unknown as ListingCardData[] | null)?.map((l) => <ListingCard key={l.id} l={l} faved={auth.user ? favs.has(l.id) : undefined} />)}
             </div>
           )}
         </section>

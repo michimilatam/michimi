@@ -8,6 +8,8 @@ import { photoUrl } from "@/lib/photo";
 import { ContactButtons } from "./ContactButtons";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { ShareButtons } from "@/components/ShareButtons";
+import { FavoriteButton } from "@/components/FavoriteButton";
+import { ReportButton } from "@/components/ReportButton";
 
 type P = Promise<{ id: string }>;
 type SP = Promise<{ fotos_fallidas?: string }>;
@@ -43,6 +45,7 @@ export default async function Publicacion({ params, searchParams }: { params: P;
   const attrs = Object.entries((l.attributes ?? {}) as Record<string, string>);
   const isOwner = auth.user?.id === l.seller_id;
   const svc = l.kind === "servicio";
+  const { data: fav } = auth.user ? await supabase.from("favorites").select("listing_id").eq("user_id", auth.user.id).eq("listing_id", l.id).maybeSingle() : { data: null };
   const days = Math.floor((Date.now() - new Date(l.availability_confirmed_at).getTime()) / 86_400_000);
 
   return (
@@ -58,7 +61,7 @@ export default async function Publicacion({ params, searchParams }: { params: P;
       <div className="space-y-5">
         <div>
           <p className="text-sm text-ink-soft">{CATEGORIES[l.category as CategorySlug]?.label}{subcategoryLabel(l.category, l.subcategory) ? ` › ${subcategoryLabel(l.category, l.subcategory)}` : ""} · {l.city}{l.region ? `, ${l.region}` : ""}</p>
-          <h1 className="text-2xl font-bold">{l.title}</h1>
+          <div className="flex items-start justify-between gap-3"><h1 className="text-2xl font-bold">{l.title}</h1>{!isOwner && <FavoriteButton listingId={l.id} initial={!!fav} loggedIn={!!auth.user} />}</div>
           <p className="mt-2 text-3xl font-bold tabular-nums">{formatPrice({ priceType: l.price_type, amount: l.price_amount, currency: l.currency }, (a) => formatMoney({ amount: a, currency: l.currency as CurrencyCode }))}</p>
           <p className="mt-1 text-sm">
             {!svc && <span className="rounded-full bg-ink px-2 py-0.5 text-lima">{CONDITIONS[l.condition as Condition]}</span>}
@@ -94,6 +97,7 @@ export default async function Publicacion({ params, searchParams }: { params: P;
 
         {isOwner && <Link href={`/publicacion/${l.id}/editar`} className="btn-ghost w-full">Editar publicación</Link>}
         <ShareButtons path={`/publicacion/${l.id}`} title={l.title} />
+        {!isOwner && <ReportButton listingId={l.id} sellerId={l.seller_id} loggedIn={!!auth.user} />}
 
         <Link href={`/perfil/${l.seller.id}`} className="flex items-center gap-3 rounded-card border border-line bg-card p-4">
           {l.seller.avatar_url ? <img src={l.seller.avatar_url} alt="" className="h-12 w-12 rounded-full" /> : <div className="h-12 w-12 rounded-full bg-line" />}

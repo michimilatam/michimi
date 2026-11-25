@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CONDITIONS, formatMoney, formatPrice, type Condition, type CurrencyCode } from "@michimi/core";
 import { photoUrl } from "@/lib/photo";
+import { FavoriteButton } from "@/components/FavoriteButton";
 
 export interface ListingCardData {
   id: string;
@@ -15,7 +16,7 @@ export interface ListingCardData {
   listing_photos: { path: string; position: number }[];
 }
 
-export function ListingCard({ l }: { l: ListingCardData }) {
+export function ListingCard({ l, faved }: { l: ListingCardData; faved?: boolean }) {
   const cover = [...l.listing_photos].sort((a, b) => a.position - b.position)[0];
   return (
     <Link href={`/publicacion/${l.id}`} className="group block overflow-hidden rounded-card border border-line bg-card">
@@ -28,6 +29,7 @@ export function ListingCard({ l }: { l: ListingCardData }) {
         {l.status === "reservada" && (
           <span className="absolute left-2 top-2 rounded-full bg-ink px-2 py-0.5 text-xs font-semibold text-lima">Reservado</span>
         )}
+        {faved !== undefined && <FavoriteButton listingId={l.id} initial={faved} className="absolute right-2 top-2" />}
       </div>
       <div className="p-3">
         <p className="text-lg font-bold tabular-nums">{formatPrice({ priceType: l.price_type, amount: l.price_amount, currency: l.currency }, (a) => formatMoney({ amount: a, currency: l.currency }))}</p>

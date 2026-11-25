@@ -24,7 +24,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const { data } = await supabase.auth.getUser();
   const country = await currentCountry();
   const profile = data.user
-    ? (await supabase.from("profiles").select("display_name,avatar_url").eq("id", data.user.id).maybeSingle()).data
+    ? (await supabase.from("profiles").select("display_name,avatar_url,is_admin").eq("id", data.user.id).maybeSingle()).data
     : null;
   return (
     <html lang="es-PY">
@@ -38,7 +38,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             {data.user && <MessagesBadge userId={data.user.id} />}
             <Link href="/publicar" className="btn-primary h-10 px-4 text-sm">Vender</Link>
             {data.user ? (
-              <UserMenu userId={data.user.id} name={profile?.display_name ?? data.user.email ?? "Usuario"} avatar={profile?.avatar_url ?? null} />
+              <UserMenu userId={data.user.id} name={profile?.display_name ?? data.user.email ?? "Usuario"} avatar={profile?.avatar_url ?? null} admin={!!profile?.is_admin} />
             ) : (
               <Link href="/ingresar" className="text-sm">Ingresar</Link>
             )}

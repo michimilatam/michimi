@@ -2,6 +2,7 @@ import Link from "next/link";
 import { formatMoney, formatPrice, subcategoryLabel, type CurrencyCode } from "@michimi/core";
 import { photoUrl } from "@/lib/photo";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { FavoriteButton } from "@/components/FavoriteButton";
 
 export interface ServiceCardData {
   id: string;
@@ -19,13 +20,14 @@ export interface ServiceCardData {
 }
 
 /** Tarjeta de profesional: lo que se contrata es la persona, así que la persona va primero. */
-export function ServiceCard({ l, rep }: { l: ServiceCardData; rep?: { avg: number | null; count: number; done: number } }) {
+export function ServiceCard({ l, rep, faved }: { l: ServiceCardData; faved?: boolean; rep?: { avg: number | null; count: number; done: number } }) {
   const cover = [...l.listing_photos].sort((a, b) => a.position - b.position)[0];
   const s = l.seller;
   const zones = l.coverage_regions.length ? l.coverage_regions : [l.region ?? l.city];
   return (
-    <Link href={`/publicacion/${l.id}`} className="group flex flex-col overflow-hidden rounded-card border border-line bg-card hover:border-ink">
-      <div className="flex items-center gap-3 p-4">
+    <Link href={`/publicacion/${l.id}`} className="group relative flex flex-col overflow-hidden rounded-card border border-line bg-card hover:border-ink">
+      {faved !== undefined && <FavoriteButton listingId={l.id} initial={faved} className="absolute right-3 top-3" />}
+      <div className="flex items-center gap-3 p-4 pr-12">
         {s?.avatar_url
           ? <img src={s.avatar_url} alt="" className="h-14 w-14 rounded-full object-cover" referrerPolicy="no-referrer" />
           : <span className="flex h-14 w-14 items-center justify-center rounded-full bg-ink text-xl font-bold text-lima">{(s?.display_name[0] ?? "U").toUpperCase()}</span>}
