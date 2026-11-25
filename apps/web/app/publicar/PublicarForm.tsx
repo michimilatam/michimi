@@ -6,6 +6,7 @@ import {
   type CategorySlug, type CountryCode, type CurrencyCode,
 } from "@michimi/core";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { isImageFile, prepareImage } from "@/lib/image";
 
 const FIELD_LABEL: Record<string, string> = { marca: "Marca", modelo: "Modelo", bateria_pct: "Salud de batería (%)", medidas: "Medidas (alto × ancho × prof.)" };
 const MAX_PHOTOS = 12;
@@ -20,6 +21,8 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(0);
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
   const previews = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files]);
   useEffect(() => () => previews.forEach((u) => URL.revokeObjectURL(u)), [previews]);
@@ -29,9 +32,23 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
     setRegion(COUNTRIES[c].regions[0]);
     setCurrency(COUNTRIES[c].local);
   }
-  function addFiles(list: FileList | null) {
+  async function addFiles(list: FileList | null) {
     if (!list) return;
-    setFiles((prev) => [...prev, ...Array.from(list).filter((f) => f.type.startsWith("image/"))].slice(0, MAX_PHOTOS));
+    setPhotoError(null);
+    const picked = Array.from(list);
+    const images = picked.filter(isImageFile).slice(0, MAX_PHOTOS - files.length);
+    if (images.length < picked.length) setPhotoError("Algunos archivos no son imágenes o superan el máximo de fotos.");
+    setProcessing((n) => n + images.length);
+    for (const f of images) {
+      try {
+        const jpg = await prepareImage(f);
+        setFiles((prev) => (prev.length < MAX_PHOTOS ? [...prev, jpg] : prev));
+      } catch {
+        setPhotoError(`No pudimos leer "${f.name}". Probá con otra foto.`);
+      } finally {
+        setProcessing((n) => n - 1);
+      }
+    }
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -85,9 +102,8 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
     let failed = 0;
     for (const [i, file] of files.entries()) {
       setProgress(`Subiendo foto ${i + 1} de ${files.length}…`);
-      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const path = `${u.user.id}/${listing.id}/${i}-${crypto.randomUUID()}.${ext}`;
-      const up = await supabase.storage.from("listing-photos").upload(path, file, { contentType: file.type });
+      const path = `${u.user.id}/${listing.id}/${i}-${crypto.randomUUID()}.jpg`;
+      const up = await supabase.storage.from("listing-photos").upload(path, file, { contentType: "image/jpeg" });
       if (up.error) { failed++; continue; }
       const ins = await supabase.from("listing_photos").insert({ listing_id: listing.id, path, position: i });
       if (ins.error) failed++;
@@ -117,7 +133,9 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
           <span className="text-[15px] font-semibold">Agregar fotos</span>
           <span className="text-sm text-ink-soft">Tocá para elegir o arrastrá las imágenes acá. Mejor si son de distintos ángulos.</span>
         </label>
-        <input id="photos" type="file" accept="image/*" multiple className="sr-only" onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
+        <input id="photos" type="file" accept="image/*,.heic,.heif" multiple className="sr-only" onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
+        {processing > 0 && <p className="text-sm text-ink-soft">Preparando {processing} foto(s)…</p>}
+        {photoError && <p className="text-sm text-bad">{photoError}</p>}
         {files.length > 0 && (
           <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
             {previews.map((src, i) => (
@@ -200,7 +218,7 @@ export function PublicarForm({ initialCountry }: { initialCountry: CountryCode }
         </div>
       </div>
       {err("form")}
-      <button disabled={busy} className="btn-primary w-full">{busy ? progress ?? "Publicando…" : "Publicar"}</button>
+      <button disabled={busy || processing > 0} className="btn-primary w-full">{busy ? progress ?? "Publicando…" : "Publicar"}</button>
     </form>
   );
 }
