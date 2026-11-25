@@ -32,7 +32,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <Link href="/" aria-label="Michimi, inicio" className="shrink-0">
               <img src="/logo-horizontal-oscuro.svg" alt="Michimi" className="h-8 w-auto" />
             </Link>
-            <CountryPicker current={country} />
             <form action="/" className="flex-1">
               <input
                 name="q"
@@ -52,7 +51,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
         <footer className="mx-auto max-w-6xl px-4 py-10 text-sm text-ink-soft">
           Michimi · Comprá y vendé entre personas, con la confianza de una plataforma que está de tu lado.
-          <span className="mt-2 flex gap-4">
+          <span className="mt-3 flex flex-wrap items-center gap-4">
+            <span className="rounded-full bg-ink"><CountryPicker current={country} /></span>
             <Link href="/privacidad" className="underline">Privacidad</Link>
             <Link href="/terminos" className="underline">Términos</Link>
           </span>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatMoney, parseMoney, type CurrencyCode } from "@michimi/core";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { photoUrl } from "@/lib/photo";
 import { READ_EVENT } from "@/components/MessagesBadge";
 
 type Msg = { id: number; sender_id: string | null; kind: "texto" | "oferta" | "sistema"; body: string; offer_id: string | null; created_at: string };
@@ -12,10 +13,13 @@ type Offer = { id: string; created_by: string; amount: number; currency: string;
 const QUICK = ["¿Sigue disponible?", "¿Dónde se puede retirar?", "¿Aceptás transferencia?"];
 // Advertencia anti-fuga: detecta teléfonos o pedidos de códigos
 const RISKY = /(\+?595|09\d{2})[\s-]?\d{3}[\s-]?\d{3}|c[oó]digo (de )?(verificaci[oó]n|sms|whatsapp)/i;
+const OFFER_STATUS: Record<string, string> = { pendiente: "Pendiente", aceptada: "Aceptada", rechazada: "Rechazada", contraofertada: "Contraofertada", vencida: "Vencida", retirada: "Retirada" };
 
 export function Chat(props: {
   me: string;
-  conversation: { id: string; buyerId: string; listing: { id: string; title: string; currency: string; price_amount: number; status: string } };
+  role: "vendo" | "compro";
+  other: { id: string; name: string; avatar: string | null };
+  conversation: { id: string; buyerId: string; listing: { id: string; title: string; currency: string; price_amount: number; status: string; cover: string | null } };
   initialMessages: Msg[];
   initialOffers: Offer[];
   operation: { id: string; status: string } | null;
@@ -24,11 +28,13 @@ export function Chat(props: {
   const [messages, setMessages] = useState(props.initialMessages);
   const [offers, setOffers] = useState(props.initialOffers);
   const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
   const [counter, setCounter] = useState<{ parent: string; value: string } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
   const cur = props.conversation.listing.currency as CurrencyCode;
   const convId = props.conversation.id;
+  const l = props.conversation.listing;
 
   useEffect(() => {
     const supabase = supabaseBrowser();
@@ -41,27 +47,41 @@ export function Chat(props: {
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [convId]);
-  useEffect(() => bottom.current?.scrollIntoView({ behavior: "smooth" }), [messages.length]);
-  // Marca la conversación como leída al abrirla y cada vez que llega algo nuevo
+
   useEffect(() => {
-    supabaseBrowser().rpc("mark_conversation_read", { p_conversation: convId })
-      .then(() => window.dispatchEvent(new Event(READ_EVENT)));
+    bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages.length]);
+
+  // Marca la conversación como leída al abrirla y cada vez que llega algo nuevo.
+  // (Las llaves importan: el efecto no debe devolver la promesa.)
+  useEffect(() => {
+    void supabaseBrowser()
+      .rpc("mark_conversation_read", { p_conversation: convId })
+      .then(() => { window.dispatchEvent(new Event(READ_EVENT)); });
   }, [convId, messages.length]);
 
   async function send(body: string) {
-    if (!body.trim()) return;
-    const supabase = supabaseBrowser();
-    const { error } = await supabase.from("messages").insert({ conversation_id: convId, sender_id: props.me, body });
-    if (error) setErr(error.message); else setText("");
+    if (!body.trim() || sending) return;
+    setSending(true);
+    setErr(null);
+    const { data, error } = await supabaseBrowser()
+      .from("messages")
+      .insert({ conversation_id: convId, sender_id: props.me, body: body.trim() })
+      .select("*")
+      .single();
+    setSending(false);
+    if (error) return setErr(error.message);
+    setText("");
+    if (data) setMessages((m) => (m.some((x) => x.id === (data as Msg).id) ? m : [...m, data as Msg]));
   }
   async function accept(offerId: string) {
     const { data, error } = await supabaseBrowser().rpc("accept_offer", { p_offer: offerId });
     if (error) return setErr(error.message);
     router.push(`/operacion/${data}`);
   }
-  async function reject(offerId: string) {
+  async function withdraw(offerId: string) {
     const { error } = await supabaseBrowser().from("offers").update({ status: "retirada" }).eq("id", offerId);
-    if (error) setErr("Solo quien hizo la oferta puede retirarla. Respondé con una contraoferta.");
+    if (error) setErr("Solo quien hizo la oferta puede retirarla.");
   }
   async function sendCounter() {
     if (!counter) return;
@@ -72,70 +92,95 @@ export function Chat(props: {
   }
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-10rem)] max-w-2xl flex-col">
-      <header className="border-b border-line pb-3">
-        <Link href={`/publicacion/${props.conversation.listing.id}`} className="font-semibold hover:underline">{props.conversation.listing.title}</Link>
-        <p className="text-sm text-ink-soft">Publicado a {formatMoney({ amount: props.conversation.listing.price_amount, currency: cur })}</p>
-        {props.operation && (
-          <Link href={`/operacion/${props.operation.id}`} className="mt-2 inline-block rounded-full bg-lima px-3 py-1 text-sm font-semibold">
-            Ver operación ({props.operation.status}) →
-          </Link>
-        )}
+    <div className="flex h-full min-h-0 flex-col">
+      {/* Cabecera: con quién hablo y sobre qué producto */}
+      <header className="flex items-center gap-3 border-b border-line bg-card px-4 py-3">
+        <Link href="/mensajes" className="-ml-1 flex h-9 w-9 items-center justify-center rounded-full hover:bg-paper md:hidden" aria-label="Volver a mensajes">←</Link>
+        <Link href={`/perfil/${props.other.id}`} className="shrink-0">
+          {props.other.avatar
+            ? <img src={props.other.avatar} alt="" className="h-10 w-10 rounded-full object-cover" referrerPolicy="no-referrer" />
+            : <span className="flex h-10 w-10 items-center justify-center rounded-full bg-ink font-semibold text-lima">{(props.other.name[0] ?? "U").toUpperCase()}</span>}
+        </Link>
+        <div className="min-w-0 flex-1">
+          <Link href={`/perfil/${props.other.id}`} className="block truncate font-semibold hover:underline">{props.other.name}</Link>
+          <p className="truncate text-xs text-ink-soft">{props.role === "vendo" ? "Le interesa tu producto" : "Vendedor"}</p>
+        </div>
+        <Link href={`/publicacion/${l.id}`} className="flex max-w-[45%] items-center gap-2 rounded-xl border border-line px-2 py-1.5 hover:border-ink">
+          <span className="h-9 w-9 shrink-0 overflow-hidden rounded-md bg-line">
+            {l.cover && <img src={photoUrl(l.cover)} alt="" className="h-full w-full object-cover" />}
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-semibold">{l.title}</span>
+            <span className="block text-xs tabular-nums text-ink-soft">{formatMoney({ amount: l.price_amount, currency: cur })}</span>
+          </span>
+        </Link>
       </header>
 
-      <ol className="flex-1 space-y-2 overflow-y-auto py-4">
+      {props.operation && (
+        <Link href={`/operacion/${props.operation.id}`} className="flex items-center justify-between bg-lima px-4 py-2 text-sm font-semibold">
+          <span>Operación {props.operation.status}</span><span>Ver PIN, entrega y calificación →</span>
+        </Link>
+      )}
+
+      <ol className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 py-4">
+        {messages.length === 0 && <li className="py-8 text-center text-sm text-ink-soft">Empezá la conversación. Las ofertas formales aparecen como tarjetas.</li>}
         {messages.map((m) => {
           const mine = m.sender_id === props.me;
-          if (m.kind === "sistema") return <li key={m.id} className="text-center text-xs text-ink-soft">{m.body}</li>;
+          if (m.kind === "sistema") return <li key={m.id} className="mx-auto max-w-md rounded-full bg-line/60 px-3 py-1 text-center text-xs text-ink-soft">{m.body}</li>;
           if (m.kind === "oferta") {
             const o = offers.find((x) => x.id === m.offer_id);
             if (!o) return null;
             const canAnswer = o.status === "pendiente" && o.created_by !== props.me && new Date(o.expires_at) > new Date();
             return (
-              <li key={m.id} className={`max-w-[80%] rounded-2xl border-2 border-ink p-3 ${mine ? "ml-auto" : ""}`}>
-                <p className="text-xs uppercase tracking-wide text-ink-soft">{mine ? "Tu oferta" : "Oferta recibida"} · {o.status}</p>
+              <li key={m.id} className={`w-fit max-w-[80%] rounded-2xl border-2 border-ink bg-card p-3 ${mine ? "ml-auto" : ""}`}>
+                <p className="text-xs uppercase tracking-wide text-ink-soft">{mine ? "Tu oferta" : "Oferta recibida"} · {OFFER_STATUS[o.status] ?? o.status}</p>
                 <p className="text-2xl font-bold tabular-nums">{formatMoney({ amount: o.amount, currency: o.currency as CurrencyCode })}</p>
                 {canAnswer && (
-                  <div className="mt-2 flex gap-2">
+                  <div className="mt-2 flex flex-wrap gap-2">
                     <button onClick={() => accept(o.id)} className="btn-primary h-9 px-4 text-sm">Aceptar y reservar</button>
                     <button onClick={() => setCounter({ parent: o.id, value: "" })} className="btn-ghost h-9 px-4 text-sm">Contraofertar</button>
                   </div>
                 )}
                 {o.status === "pendiente" && o.created_by === props.me && (
-                  <button onClick={() => reject(o.id)} className="mt-2 text-sm underline">Retirar oferta</button>
+                  <button onClick={() => withdraw(o.id)} className="mt-2 text-sm underline">Retirar oferta</button>
                 )}
               </li>
             );
           }
           return (
-            <li key={m.id} className={`max-w-[80%] rounded-2xl px-3 py-2 text-[15px] ${mine ? "ml-auto bg-ink text-white" : "bg-card border border-line"}`}>
+            <li key={m.id} className={`w-fit max-w-[80%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-[15px] ${mine ? "ml-auto bg-ink text-white" : "border border-line bg-card"}`}>
               {m.body}
+              <span className={`ml-2 align-bottom text-[10px] ${mine ? "text-white/60" : "text-ink-soft"}`}>
+                {new Date(m.created_at).toLocaleTimeString("es-PY", { hour: "2-digit", minute: "2-digit" })}
+              </span>
             </li>
           );
         })}
         <div ref={bottom} />
       </ol>
 
-      {RISKY.test(text) && (
-        <p className="mb-2 rounded-xl bg-warn/10 p-2 text-sm text-warn">
-          Ojo: compartir teléfonos o códigos fuera de Michimi te deja sin reputación ni respaldo. Nunca compartas códigos de verificación.
-        </p>
-      )}
-      {counter && (
-        <div className="mb-2 flex gap-2">
-          <input autoFocus className="field" placeholder="Tu contraoferta" value={counter.value} onChange={(e) => setCounter({ ...counter, value: e.target.value })} />
-          <button onClick={sendCounter} className="btn-primary shrink-0">Enviar</button>
-          <button onClick={() => setCounter(null)} className="btn-ghost shrink-0">Cancelar</button>
+      <div className="border-t border-line bg-card px-4 pb-4 pt-3">
+        {RISKY.test(text) && (
+          <p className="mb-2 rounded-xl bg-warn/10 p-2 text-sm text-warn">
+            Ojo: compartir teléfonos o códigos fuera de Michimi te deja sin reputación ni respaldo. Nunca compartas códigos de verificación.
+          </p>
+        )}
+        {counter && (
+          <div className="mb-2 flex gap-2">
+            <input autoFocus inputMode="decimal" className="field" placeholder="Tu contraoferta" value={counter.value} onChange={(e) => setCounter({ ...counter, value: e.target.value })} />
+            <button onClick={sendCounter} className="btn-primary shrink-0">Enviar</button>
+            <button onClick={() => setCounter(null)} className="btn-ghost shrink-0">Cancelar</button>
+          </div>
+        )}
+        <div className="mb-2 flex gap-2 overflow-x-auto">
+          {QUICK.map((q) => <button key={q} onClick={() => send(q)} className="shrink-0 rounded-full border border-line bg-paper px-3 py-1 text-sm hover:border-ink">{q}</button>)}
         </div>
-      )}
-      <div className="mb-2 flex gap-2 overflow-x-auto">
-        {QUICK.map((q) => <button key={q} onClick={() => send(q)} className="shrink-0 rounded-full border border-line bg-card px-3 py-1 text-sm">{q}</button>)}
+        <form onSubmit={(e) => { e.preventDefault(); send(text); }} className="flex gap-2">
+          <input value={text} onChange={(e) => setText(e.target.value)} className="field" placeholder="Escribí un mensaje" aria-label="Mensaje" />
+          <button disabled={sending || !text.trim()} className="btn-primary shrink-0">Enviar</button>
+        </form>
+        {err && <p className="mt-1 text-sm text-bad">{err}</p>}
       </div>
-      <form onSubmit={(e) => { e.preventDefault(); send(text); }} className="flex gap-2">
-        <input value={text} onChange={(e) => setText(e.target.value)} className="field" placeholder="Escribí un mensaje" aria-label="Mensaje" />
-        <button className="btn-primary shrink-0">Enviar</button>
-      </form>
-      {err && <p className="mt-1 text-sm text-bad">{err}</p>}
     </div>
   );
 }
