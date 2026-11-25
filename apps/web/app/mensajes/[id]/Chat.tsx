@@ -101,6 +101,8 @@ export function Chat(props: {
     if (!counter) return;
     const m = parseMoney(counter.value, cur);
     if (!m) return setErr("Monto inválido");
+    const p = props.conversation.listing.price_amount;
+    if (p && m.amount > p * 20 && !confirm(`¿Seguro? ${formatMoney(m)} es mucho más que el precio publicado.`)) return;
     const { error } = await supabaseBrowser().rpc("make_offer", { p_conversation: convId, p_amount: m.amount, p_currency: cur, p_parent: counter.parent ?? undefined });
     if (error) setErr(error.message); else setCounter(null);
   }

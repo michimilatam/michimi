@@ -41,7 +41,7 @@ export function OperationActions(props: { service?: boolean; id: string; role: "
           <div className="rounded-card bg-ink p-5 text-white">
             <p className="text-sm text-white/70">Tu PIN de entrega</p>
             <p className="text-5xl font-bold tracking-[0.3em] text-lima tabular-nums">{props.pin}</p>
-            <p className="mt-2 text-sm text-white/80">Dáselo al vendedor solo cuando tengas el producto en la mano y lo hayas revisado.</p>
+            <p className="mt-2 text-sm text-white/80">{props.service ? "Dáselo al profesional solo cuando el trabajo esté terminado y conforme." : "Dáselo al vendedor solo cuando tengas el producto en la mano y lo hayas revisado."}</p>
           </div>
         ) : (
           <div className="space-y-2">
