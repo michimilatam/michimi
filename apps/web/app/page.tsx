@@ -39,7 +39,6 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
     for (const r of reps ?? []) rep.set(r.user_id, { avg: r.seller_avg ? Number(r.seller_avg) : null, count: Number(r.seller_count), done: Number(r.sales_completed) });
   }
 
-  const tab = (active: boolean) => `flex-1 rounded-full px-4 py-2 text-center text-[15px] font-semibold ${active ? "bg-ink text-lima" : "text-ink-soft hover:text-ink"}`;
   const heading = sp.q
     ? <>Resultados para “{sp.q}”</>
     : servicios
@@ -48,10 +47,6 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
 
   return (
     <div className="space-y-5">
-      <nav className="mx-auto flex max-w-sm gap-1 rounded-full border border-line bg-card p-1" aria-label="Tipo de publicación">
-        <Link href="/" className={tab(!servicios)} aria-current={!servicios ? "page" : undefined}>Productos</Link>
-        <Link href="/?tipo=servicios" className={tab(servicios)} aria-current={servicios ? "page" : undefined}>Servicios</Link>
-      </nav>
 
       {servicios && (
         <div className="grid gap-3 rounded-card bg-ink p-5 text-white sm:grid-cols-[1fr_auto_auto] sm:items-center">

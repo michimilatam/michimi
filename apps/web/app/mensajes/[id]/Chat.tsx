@@ -19,7 +19,7 @@ export function Chat(props: {
   me: string;
   role: "vendo" | "compro";
   other: { id: string; name: string; avatar: string | null };
-  conversation: { id: string; buyerId: string; listing: { id: string; title: string; currency: string; price_amount: number; status: string; cover: string | null } };
+  conversation: { id: string; buyerId: string; listing: { id: string; title: string; currency: string; price_amount: number | null; status: string; cover: string | null; href?: string } };
   initialMessages: Msg[];
   initialOffers: Offer[];
   operation: { id: string; status: string } | null;
@@ -105,13 +105,13 @@ export function Chat(props: {
           <Link href={`/perfil/${props.other.id}`} className="block truncate font-semibold hover:underline">{props.other.name}</Link>
           <p className="truncate text-xs text-ink-soft">{props.role === "vendo" ? "Le interesa tu producto" : "Vendedor"}</p>
         </div>
-        <Link href={`/publicacion/${l.id}`} className="flex max-w-[45%] items-center gap-2 rounded-xl border border-line px-2 py-1.5 hover:border-ink">
+        <Link href={l.href ?? `/publicacion/${l.id}`} className="flex max-w-[45%] items-center gap-2 rounded-xl border border-line px-2 py-1.5 hover:border-ink">
           <span className="h-9 w-9 shrink-0 overflow-hidden rounded-md bg-line">
             {l.cover && <img src={photoUrl(l.cover)} alt="" className="h-full w-full object-cover" />}
           </span>
           <span className="min-w-0">
             <span className="block truncate text-sm font-semibold">{l.title}</span>
-            <span className="block text-xs tabular-nums text-ink-soft">{formatMoney({ amount: l.price_amount, currency: cur })}</span>
+            <span className="block text-xs tabular-nums text-ink-soft">{l.price_amount ? formatMoney({ amount: l.price_amount, currency: cur }) : "A presupuestar"}</span>
           </span>
         </Link>
       </header>

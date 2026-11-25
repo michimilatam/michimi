@@ -6,6 +6,8 @@ import { currentCountry } from "@/lib/country";
 import { CountryPicker } from "@/components/CountryPicker";
 import { MessagesBadge } from "@/components/MessagesBadge";
 import { UserMenu } from "@/components/UserMenu";
+import { Suspense } from "react";
+import { HeaderSearch, SectionNav } from "@/components/SectionNav";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.michimi.com"),
@@ -32,13 +34,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <Link href="/" aria-label="Michimi, inicio" className="shrink-0">
               <img src="/logo-horizontal-oscuro.svg" alt="Michimi" className="h-8 w-auto" />
             </Link>
-            <form action="/" className="flex-1">
-              <input
-                name="q"
-                placeholder="Buscá celulares, muebles, herramientas…"
-                className="h-10 w-full rounded-full bg-white/10 px-4 text-[15px] placeholder:text-white/60 outline-none focus:bg-white focus:text-ink"
-              />
-            </form>
+            <Suspense fallback={<div className="flex-1" />}><HeaderSearch /></Suspense>
             {data.user && <MessagesBadge userId={data.user.id} />}
             <Link href="/publicar" className="btn-primary h-10 px-4 text-sm">Vender</Link>
             {data.user ? (
@@ -47,6 +43,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Link href="/ingresar" className="text-sm">Ingresar</Link>
             )}
           </nav>
+          <Suspense><SectionNav /></Suspense>
         </header>
         <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
         <footer className="mx-auto max-w-6xl px-4 py-10 text-sm text-ink-soft">

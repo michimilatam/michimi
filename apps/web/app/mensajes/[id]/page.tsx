@@ -19,7 +19,7 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
   ]);
   const imSeller = c.seller_id === u.user.id;
   const other = imSeller ? c.buyer : c.seller;
-  const subject = c.listing ?? { id: c.request.id, title: `Pedido: ${c.request.title}`, currency: c.request.currency ?? "PYG", price_amount: 0, status: c.request.status === "abierto" ? "activa" : "reservada", listing_photos: [] };
+  const subject = c.listing ?? { id: c.request.id, title: `Pedido: ${c.request.title}`, currency: c.request.currency ?? "PYG", price_amount: null, status: c.request.status === "abierto" ? "activa" : "reservada", listing_photos: [], href: `/pedidos/${c.request.id}` };
   const cover = [...(subject.listing_photos ?? [])].sort((a: { position: number }, b: { position: number }) => a.position - b.position)[0]?.path ?? null;
   return (
     <Chat
