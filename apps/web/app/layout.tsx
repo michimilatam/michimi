@@ -45,6 +45,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
         <footer className="mx-auto max-w-6xl px-4 py-10 text-sm text-ink-soft">
           Michimi · Comprá y vendé entre personas, con la confianza de una plataforma que está de tu lado.
+          <span className="mt-2 flex gap-4">
+            <Link href="/privacidad" className="underline">Privacidad</Link>
+            <Link href="/terminos" className="underline">Términos</Link>
+          </span>
         </footer>
       </body>
     </html>
