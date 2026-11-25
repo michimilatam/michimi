@@ -2,47 +2,27 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 
-type Section = "productos" | "servicios" | "pedidos";
-
-function useSection(): Section {
+/** Buscador con selector Productos | Servicios integrado: una sola fila, sin barra extra. */
+export function HeaderSearch() {
   const path = usePathname();
   const sp = useSearchParams();
-  if (path.startsWith("/pedidos")) return "pedidos";
-  if (path === "/" && sp.get("tipo") === "servicios") return "servicios";
-  return "productos";
-}
-
-/** Buscador del header: busca en productos o en servicios según la sección activa. */
-export function HeaderSearch() {
-  const s = useSection();
-  const svc = s !== "productos";
+  const svc = (path === "/" && sp.get("tipo") === "servicios") || path.startsWith("/pedidos");
+  const seg = (on: boolean) => `rounded-full px-3 py-1.5 text-[13px] font-semibold whitespace-nowrap ${on ? "bg-lima text-ink" : "text-white/70 hover:text-white"}`;
   return (
-    <form action="/" className="flex-1">
+    <form action="/" className="order-last flex h-10 w-full items-center gap-1 rounded-full bg-white/10 p-1 focus-within:bg-white focus-within:text-ink md:order-none md:w-auto md:flex-1">
+      <span className="flex shrink-0 rounded-full bg-black/30 p-0.5">
+        <Link href="/" className={seg(!svc)} aria-current={!svc ? "page" : undefined}>Productos</Link>
+        <Link href="/?tipo=servicios" className={seg(svc)} aria-current={svc ? "page" : undefined}>Servicios</Link>
+      </span>
       {svc && <input type="hidden" name="tipo" value="servicios" />}
       <input
-        key={s}
+        key={String(svc)}
         name="q"
-        placeholder={svc ? "Buscá electricistas, clases, fletes…" : "Buscá celulares, muebles, herramientas…"}
-        className="h-10 w-full rounded-full bg-white/10 px-4 text-[15px] placeholder:text-white/60 outline-none focus:bg-white focus:text-ink"
+        defaultValue={sp.get("q") ?? ""}
+        aria-label={svc ? "Buscar servicios" : "Buscar productos"}
+        placeholder={svc ? "Electricistas, clases, fletes…" : "Celulares, muebles, herramientas…"}
+        className="min-w-0 flex-1 bg-transparent px-2 text-[15px] placeholder:text-white/60 outline-none"
       />
     </form>
-  );
-}
-
-/** Segunda fila del header: qué estás mirando. Siempre visible, en cualquier página. */
-export function SectionNav() {
-  const s = useSection();
-  const item = (key: Section, href: string, label: string) => (
-    <Link href={href} aria-current={s === key ? "page" : undefined}
-      className={`border-b-2 px-1 pb-2 pt-1 text-[15px] font-semibold ${s === key ? "border-lima text-white" : "border-transparent text-white/60 hover:text-white"}`}>
-      {label}
-    </Link>
-  );
-  return (
-    <div className="mx-auto flex max-w-6xl gap-6 overflow-x-auto px-4">
-      {item("productos", "/", "Productos")}
-      {item("servicios", "/?tipo=servicios", "Servicios")}
-      {item("pedidos", "/pedidos", "Pedidos de presupuesto")}
-    </div>
   );
 }

@@ -7,7 +7,7 @@ import { CountryPicker } from "@/components/CountryPicker";
 import { MessagesBadge } from "@/components/MessagesBadge";
 import { UserMenu } from "@/components/UserMenu";
 import { Suspense } from "react";
-import { HeaderSearch, SectionNav } from "@/components/SectionNav";
+import { HeaderSearch } from "@/components/SectionNav";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.michimi.com"),
@@ -30,11 +30,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="es-PY">
       <body className="min-h-dvh">
         <header className="sticky top-0 z-20 bg-ink text-white">
-          <nav className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4">
-            <Link href="/" aria-label="Michimi, inicio" className="shrink-0">
+          <nav className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 md:h-16 md:flex-nowrap md:py-0">
+            <Link href="/" aria-label="Michimi, inicio" className="mr-auto shrink-0 md:mr-0">
               <img src="/logo-horizontal-oscuro.svg" alt="Michimi" className="h-8 w-auto" />
             </Link>
-            <Suspense fallback={<div className="flex-1" />}><HeaderSearch /></Suspense>
+            <Suspense fallback={<div className="order-last h-10 w-full md:order-none md:flex-1" />}><HeaderSearch /></Suspense>
             {data.user && <MessagesBadge userId={data.user.id} />}
             <Link href="/publicar" className="btn-primary h-10 px-4 text-sm">Vender</Link>
             {data.user ? (
@@ -43,9 +43,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Link href="/ingresar" className="text-sm">Ingresar</Link>
             )}
           </nav>
-          <Suspense><SectionNav /></Suspense>
         </header>
-        <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+        <main className="mx-auto max-w-6xl px-4 py-4 md:py-6">{children}</main>
         <footer className="mx-auto max-w-6xl px-4 py-10 text-sm text-ink-soft">
           Michimi · Comprá y vendé entre personas, con la confianza de una plataforma que está de tu lado.
           <span className="mt-3 flex flex-wrap items-center gap-4">

@@ -39,29 +39,26 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
     for (const r of reps ?? []) rep.set(r.user_id, { avg: r.seller_avg ? Number(r.seller_avg) : null, count: Number(r.seller_count), done: Number(r.sales_completed) });
   }
 
-  const heading = sp.q
-    ? <>Resultados para “{sp.q}”</>
-    : servicios
-      ? <><span aria-hidden="true">{flag(country)}</span> {subcategoryLabel("servicios", sp.sub) ?? "Servicios y profesionales"} en {sp.region ?? c.name}</>
-      : <><span aria-hidden="true">{flag(country)}</span> {subcategoryLabel(sp.cat, sp.sub) ?? (sp.cat && sp.cat in CATEGORIES ? CATEGORIES[sp.cat as CategorySlug].label : "Publicaciones")} en {sp.region ?? c.name}</>;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3 md:space-y-5">
 
       {servicios && (
-        <div className="grid gap-3 rounded-card bg-ink p-5 text-white sm:grid-cols-[1fr_auto_auto] sm:items-center">
-          <div>
-            <p className="text-lg font-bold">¿Necesitás un profesional?</p>
-            <p className="text-sm text-white/75">Contá qué necesitás y los profesionales de tu zona te mandan presupuestos. Gratis y sin compromiso.</p>
-          </div>
-          <Link href="/pedidos/nuevo" className="btn-primary">Pedir presupuestos</Link>
-          <Link href="/pedidos" className="btn-base border border-white/30 text-white hover:border-lima">Soy profesional: ver pedidos</Link>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-line bg-card px-3 py-2 text-sm">
+          <span className="font-semibold">¿Necesitás un profesional?</span>
+          <Link href="/pedidos/nuevo" className="font-semibold underline decoration-lima decoration-2 underline-offset-4">Pedí presupuestos gratis</Link>
+          <span className="text-ink-soft">·</span>
+          <Link href="/pedidos" className="text-ink-soft hover:text-ink hover:underline">Soy profesional: ver pedidos</Link>
         </div>
       )}
 
-      <div className="grid gap-6 md:grid-cols-[220px_1fr]">
+      <div className="grid gap-3 md:grid-cols-[220px_1fr] md:gap-6">
         <aside>
-          <form className="space-y-4">
+          <input id="ver-filtros" type="checkbox" className="peer sr-only" />
+          <label htmlFor="ver-filtros" className="flex cursor-pointer items-center justify-between rounded-xl border border-line bg-card px-3 py-2 text-sm font-semibold md:hidden">
+            Filtros <span className="text-ink-soft" aria-hidden="true">▾</span>
+          </label>
+          <form className="mt-3 hidden space-y-4 peer-checked:block md:mt-0 md:block">
             {servicios && <input type="hidden" name="tipo" value="servicios" />}
             {sp.q && <input type="hidden" name="q" value={sp.q} />}
             <div>
@@ -120,12 +117,12 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
                 <option value="precio">Menor precio</option>
               </select>
             </div>
-            <button className="btn-ghost w-full">Aplicar</button>
+            <button className="btn-ghost w-full">Aplicar filtros</button>
           </form>
         </aside>
 
         <section>
-          <h1 className="mb-4 text-2xl font-bold">{heading}</h1>
+          {sp.q && <h1 className="mb-3 text-xl font-bold">Resultados para “{sp.q}”</h1>}
           {error && <p className="text-bad">No pudimos cargar las publicaciones. Probá de nuevo en un momento.</p>}
           {data && data.length === 0 && (
             <div className="rounded-card border border-dashed border-line p-10 text-center">
