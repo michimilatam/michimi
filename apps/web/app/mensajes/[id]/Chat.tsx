@@ -10,7 +10,10 @@ import { READ_EVENT } from "@/components/MessagesBadge";
 type Msg = { id: number; sender_id: string | null; kind: "texto" | "oferta" | "sistema"; body: string; offer_id: string | null; created_at: string };
 type Offer = { id: string; created_by: string; amount: number; currency: string; status: string; expires_at: string };
 
-const QUICK = ["¿Sigue disponible?", "¿Dónde se puede retirar?", "¿Aceptás transferencia?"];
+const QUICK = {
+  producto: { compro: ["¿Sigue disponible?", "¿Dónde se puede retirar?", "¿Aceptás transferencia?"], vendo: ["Sí, sigue disponible", "Se retira en", "Acepto transferencia"] },
+  servicio: { compro: ["¿Qué días tenés disponible?", "¿Cuánto tardás?", "¿Incluye materiales?", "¿Hacés factura?"], vendo: ["¿Me mandás fotos del trabajo?", "¿En qué barrio es?", "Puedo ir a ver sin costo", "Te paso el presupuesto"] },
+} as const;
 // Advertencia anti-fuga: detecta teléfonos o pedidos de códigos
 const RISKY = /(\+?595|09\d{2})[\s-]?\d{3}[\s-]?\d{3}|c[oó]digo (de )?(verificaci[oó]n|sms|whatsapp)/i;
 const OFFER_STATUS: Record<string, string> = { pendiente: "Pendiente", aceptada: "Aceptada", rechazada: "Rechazada", contraofertada: "Contraofertada", vencida: "Vencida", retirada: "Retirada" };
@@ -23,13 +26,16 @@ export function Chat(props: {
   initialMessages: Msg[];
   initialOffers: Offer[];
   operation: { id: string; status: string } | null;
+  service?: boolean;
 }) {
+  const svc = !!props.service;
+  const word = svc ? "presupuesto" : "oferta";
   const router = useRouter();
   const [messages, setMessages] = useState(props.initialMessages);
   const [offers, setOffers] = useState(props.initialOffers);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
-  const [counter, setCounter] = useState<{ parent: string; value: string } | null>(null);
+  const [counter, setCounter] = useState<{ parent: string | null; value: string } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
   const cur = props.conversation.listing.currency as CurrencyCode;
@@ -87,7 +93,7 @@ export function Chat(props: {
     if (!counter) return;
     const m = parseMoney(counter.value, cur);
     if (!m) return setErr("Monto inválido");
-    const { error } = await supabaseBrowser().rpc("make_offer", { p_conversation: convId, p_amount: m.amount, p_currency: cur, p_parent: counter.parent });
+    const { error } = await supabaseBrowser().rpc("make_offer", { p_conversation: convId, p_amount: m.amount, p_currency: cur, p_parent: counter.parent ?? undefined });
     if (error) setErr(error.message); else setCounter(null);
   }
 
@@ -103,7 +109,7 @@ export function Chat(props: {
         </Link>
         <div className="min-w-0 flex-1">
           <Link href={`/perfil/${props.other.id}`} className="block truncate font-semibold hover:underline">{props.other.name}</Link>
-          <p className="truncate text-xs text-ink-soft">{props.role === "vendo" ? "Le interesa tu producto" : "Vendedor"}</p>
+          <p className="truncate text-xs text-ink-soft">{svc ? (props.role === "vendo" ? "Cliente" : "Profesional") : (props.role === "vendo" ? "Le interesa tu producto" : "Vendedor")}</p>
         </div>
         <Link href={l.href ?? `/publicacion/${l.id}`} className="flex max-w-[45%] items-center gap-2 rounded-xl border border-line px-2 py-1.5 hover:border-ink">
           <span className="h-9 w-9 shrink-0 overflow-hidden rounded-md bg-line">
@@ -133,16 +139,16 @@ export function Chat(props: {
             const canAnswer = o.status === "pendiente" && o.created_by !== props.me && new Date(o.expires_at) > new Date();
             return (
               <li key={m.id} className={`w-fit max-w-[80%] rounded-2xl border-2 border-ink bg-card p-3 ${mine ? "ml-auto" : ""}`}>
-                <p className="text-xs uppercase tracking-wide text-ink-soft">{mine ? "Tu oferta" : "Oferta recibida"} · {OFFER_STATUS[o.status] ?? o.status}</p>
+                <p className="text-xs uppercase tracking-wide text-ink-soft">{mine ? `Tu ${word}` : svc ? "Presupuesto recibido" : "Oferta recibida"} · {OFFER_STATUS[o.status] ?? o.status}</p>
                 <p className="text-2xl font-bold tabular-nums">{formatMoney({ amount: o.amount, currency: o.currency as CurrencyCode })}</p>
                 {canAnswer && (
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <button onClick={() => accept(o.id)} className="btn-primary h-9 px-4 text-sm">Aceptar y reservar</button>
-                    <button onClick={() => setCounter({ parent: o.id, value: "" })} className="btn-ghost h-9 px-4 text-sm">Contraofertar</button>
+                    <button onClick={() => accept(o.id)} className="btn-primary h-9 px-4 text-sm">{svc ? "Aceptar presupuesto" : "Aceptar y reservar"}</button>
+                    <button onClick={() => setCounter({ parent: o.id, value: "" })} className="btn-ghost h-9 px-4 text-sm">{svc ? "Proponer otro precio" : "Contraofertar"}</button>
                   </div>
                 )}
                 {o.status === "pendiente" && o.created_by === props.me && (
-                  <button onClick={() => withdraw(o.id)} className="mt-2 text-sm underline">Retirar oferta</button>
+                  <button onClick={() => withdraw(o.id)} className="mt-2 text-sm underline">Retirar {word}</button>
                 )}
               </li>
             );
@@ -167,13 +173,16 @@ export function Chat(props: {
         )}
         {counter && (
           <div className="mb-2 flex gap-2">
-            <input autoFocus inputMode="decimal" className="field" placeholder="Tu contraoferta" value={counter.value} onChange={(e) => setCounter({ ...counter, value: e.target.value })} />
+            <input autoFocus inputMode="decimal" className="field" placeholder={counter.parent ? (svc ? "Otro precio" : "Tu contraoferta") : svc ? "Monto del presupuesto" : "Monto de tu oferta"} value={counter.value} onChange={(e) => setCounter({ ...counter, value: e.target.value })} />
             <button onClick={sendCounter} className="btn-primary shrink-0">Enviar</button>
             <button onClick={() => setCounter(null)} className="btn-ghost shrink-0">Cancelar</button>
           </div>
         )}
         <div className="mb-2 flex gap-2 overflow-x-auto">
-          {QUICK.map((q) => <button key={q} onClick={() => send(q)} className="shrink-0 rounded-full border border-line bg-paper px-3 py-1 text-sm hover:border-ink">{q}</button>)}
+          {!counter && !props.operation && ((svc && props.role === "vendo") || (!svc && props.role === "compro")) && (
+            <button onClick={() => setCounter({ parent: null, value: "" })} className="shrink-0 rounded-full bg-lima px-3 py-1 text-sm font-semibold text-ink">{svc ? "Enviar presupuesto" : "Hacer oferta"}</button>
+          )}
+          {QUICK[svc ? "servicio" : "producto"][props.role].map((q) => <button key={q} onClick={() => send(q)} className="shrink-0 rounded-full border border-line bg-paper px-3 py-1 text-sm hover:border-ink">{q}</button>)}
         </div>
         <form onSubmit={(e) => { e.preventDefault(); send(text); }} className="flex gap-2">
           <input value={text} onChange={(e) => setText(e.target.value)} className="field" placeholder="Escribí un mensaje" aria-label="Mensaje" />

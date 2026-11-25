@@ -8,7 +8,7 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
   const { data: u } = await supabase.auth.getUser();
   const { data: c } = await supabase
     .from("conversations")
-    .select("*, listing:listings(id,title,currency,price_amount,status,listing_photos(path,position)),request:service_requests(id,title,status,currency), buyer:profiles!conversations_buyer_id_fkey(id,display_name,avatar_url), seller:profiles!conversations_seller_id_fkey(id,display_name,avatar_url)")
+    .select("*, listing:listings(id,title,kind,currency,price_amount,status,listing_photos(path,position)),request:service_requests(id,title,status,currency), buyer:profiles!conversations_buyer_id_fkey(id,display_name,avatar_url), seller:profiles!conversations_seller_id_fkey(id,display_name,avatar_url)")
     .eq("id", id)
     .maybeSingle();
   if (!c || !u.user) notFound();
@@ -31,6 +31,7 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
       initialMessages={messages ?? []}
       initialOffers={offers ?? []}
       operation={op}
+      service={!c.listing || c.listing.kind === "servicio"}
     />
   );
 }

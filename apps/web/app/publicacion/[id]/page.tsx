@@ -7,6 +7,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { photoUrl } from "@/lib/photo";
 import { ContactButtons } from "./ContactButtons";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { ShareButtons } from "@/components/ShareButtons";
 
 type P = Promise<{ id: string }>;
 type SP = Promise<{ fotos_fallidas?: string }>;
@@ -24,7 +25,9 @@ async function load(id: string) {
 export async function generateMetadata({ params }: { params: P }): Promise<Metadata> {
   const { l } = await load((await params).id);
   if (!l) return {};
-  return { title: l.title, description: (l.description ?? "").slice(0, 150) };
+  const cover = [...(l.listing_photos ?? [])].sort((a: { position: number }, b: { position: number }) => a.position - b.position)[0];
+  const description = (l.description || `${l.title} en Michimi`).slice(0, 150);
+  return { title: l.title, description, openGraph: { title: l.title, description, ...(cover ? { images: [photoUrl(cover.path)] } : {}) } };
 }
 
 export default async function Publicacion({ params, searchParams }: { params: P; searchParams: SP }) {
@@ -88,6 +91,9 @@ export default async function Publicacion({ params, searchParams }: { params: P;
         )}
 
         <ContactButtons service={svc} listingId={l.id} currency={l.currency} price={l.price_amount} isOwner={isOwner} loggedIn={!!auth.user} status={l.status} />
+
+        {isOwner && <Link href={`/publicacion/${l.id}/editar`} className="btn-ghost w-full">Editar publicación</Link>}
+        <ShareButtons path={`/publicacion/${l.id}`} title={l.title} />
 
         <Link href={`/perfil/${l.seller.id}`} className="flex items-center gap-3 rounded-card border border-line bg-card p-4">
           {l.seller.avatar_url ? <img src={l.seller.avatar_url} alt="" className="h-12 w-12 rounded-full" /> : <div className="h-12 w-12 rounded-full bg-line" />}
