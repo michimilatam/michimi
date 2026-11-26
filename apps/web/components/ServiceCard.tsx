@@ -15,7 +15,7 @@ export interface ServiceCardData {
   seller_id: string;
   subcategory: string | null;
   coverage_regions: string[];
-  listing_photos: { path: string; position: number }[];
+  listing_photos: { path: string; thumb_path?: string | null; position: number }[];
   seller: { display_name: string; avatar_url: string | null; profession: string | null; professional_status: string } | null;
 }
 
@@ -39,7 +39,7 @@ export function ServiceCard({ l, rep, faved }: { l: ServiceCardData; faved?: boo
           </p>
         </div>
       </div>
-      {cover && <img src={photoUrl(cover.path)} alt="" className="aspect-[16/9] w-full object-cover" loading="lazy" />}
+      {cover && <img src={photoUrl(cover.thumb_path ?? cover.path)} alt="" width={480} height={270} decoding="async" className="aspect-[16/9] w-full object-cover" loading="lazy" />}
       <div className="mt-auto space-y-1 p-4 pt-3">
         <p className="line-clamp-2 text-[15px] group-hover:underline">{l.title}</p>
         <p className="font-bold tabular-nums">{formatPrice({ priceType: l.price_type, amount: l.price_amount, currency: l.currency }, (a) => formatMoney({ amount: a, currency: l.currency }))}</p>

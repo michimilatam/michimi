@@ -7,6 +7,7 @@ import { CountryPicker } from "@/components/CountryPicker";
 import { MessagesBadge } from "@/components/MessagesBadge";
 import { UserMenu } from "@/components/UserMenu";
 import { Suspense } from "react";
+import { InstallApp } from "@/components/InstallApp";
 import { HeaderSearch } from "@/components/SectionNav";
 
 export const metadata: Metadata = {
@@ -79,6 +80,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <span className="rounded-full bg-ink"><CountryPicker current={country} /></span>
             <Link href="/privacidad" className="underline">Privacidad</Link>
             <Link href="/terminos" className="underline">Términos</Link>
+            <InstallApp />
           </span>
         </footer>
       </body>

@@ -38,18 +38,23 @@ async function loadBitmap(blob: Blob): Promise<ImageBitmap | HTMLImageElement> {
 }
 
 /** Devuelve un JPEG listo para subir. Lanza error si el archivo no es una imagen legible. */
-export async function prepareImage(f: File): Promise<File> {
+export async function prepareImage(f: File, maxSide = MAX_SIDE, quality = QUALITY): Promise<File> {
   const source: Blob = isHeic(f) ? await heicToJpegBlob(f) : f;
   const bmp = await loadBitmap(source);
   const w = "naturalWidth" in bmp ? bmp.naturalWidth : bmp.width;
   const h = "naturalHeight" in bmp ? bmp.naturalHeight : bmp.height;
-  const scale = Math.min(1, MAX_SIDE / Math.max(w, h));
+  const scale = Math.min(1, maxSide / Math.max(w, h));
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(w * scale);
   canvas.height = Math.round(h * scale);
   canvas.getContext("2d")!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
-  const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", QUALITY));
+  const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", quality));
   if (!blob) throw new Error("No se pudo procesar la imagen");
   const name = f.name.replace(/\.[^.]+$/, "") + ".jpg";
   return new File([blob], name, { type: "image/jpeg" });
+}
+
+/** Miniatura liviana (~30–50 KB) para tarjetas y listados. */
+export function makeThumb(jpeg: File): Promise<File> {
+  return prepareImage(jpeg, 480, 0.75);
 }

@@ -6,7 +6,7 @@ import {
   type CategorySlug, type CountryCode, type CurrencyCode,
 } from "@michimi/core";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { isImageFile, prepareImage } from "@/lib/image";
+import { isImageFile, prepareImage, makeThumb } from "@/lib/image";
 import { photoUrl } from "@/lib/photo";
 import { DeleteListing } from "./DeleteListing";
 
@@ -138,9 +138,15 @@ export function PublicarForm({ initialCountry, initialKind = "producto", edit, d
       const i = j + offset;
       setProgress(`Subiendo foto ${j + 1} de ${files.length}…`);
       const path = `${u.user.id}/${listing.id}/${i}-${crypto.randomUUID()}.jpg`;
-      const up = await supabase.storage.from("listing-photos").upload(path, file, { contentType: "image/jpeg" });
+      const up = await supabase.storage.from("listing-photos").upload(path, file, { contentType: "image/jpeg", cacheControl: "31536000" });
       if (up.error) { failed++; continue; }
-      const ins = await supabase.from("listing_photos").insert({ listing_id: listing.id, path, position: i });
+      let thumb_path: string | null = path.replace(/\.jpg$/, "-thumb.jpg");
+      try {
+        const t = await makeThumb(file);
+        const tu = await supabase.storage.from("listing-photos").upload(thumb_path, t, { contentType: "image/jpeg", cacheControl: "31536000" });
+        if (tu.error) thumb_path = null;
+      } catch { thumb_path = null; }
+      const ins = await supabase.from("listing_photos").insert({ listing_id: listing.id, path, thumb_path, position: i });
       if (ins.error) failed++;
     }
     router.push(`/publicacion/${listing.id}${failed ? `?fotos_fallidas=${failed}` : ""}`);

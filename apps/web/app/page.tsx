@@ -18,7 +18,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
 
   let query = supabase
     .from("listings")
-    .select("id,title,price_amount,price_type,currency,condition,city,region,status,seller_id,coverage_regions,subcategory,listing_photos(path,position),seller:profiles!listings_seller_id_fkey(display_name,avatar_url,profession,professional_status)")
+    .select("id,title,price_amount,price_type,currency,condition,city,region,status,seller_id,coverage_regions,subcategory,listing_photos(path,thumb_path,position),seller:profiles!listings_seller_id_fkey(display_name,avatar_url,profession,professional_status)")
     .eq("country", country)
     .eq("kind", servicios ? "servicio" : "producto")
     .in("status", ["activa", "reservada"])
@@ -37,7 +37,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
   let svcData: typeof data = null;
   if (mixed) {
     let sq = supabase.from("listings")
-      .select("id,title,price_amount,price_type,currency,condition,city,region,status,seller_id,coverage_regions,subcategory,listing_photos(path,position),seller:profiles!listings_seller_id_fkey(display_name,avatar_url,profession,professional_status)")
+      .select("id,title,price_amount,price_type,currency,condition,city,region,status,seller_id,coverage_regions,subcategory,listing_photos(path,thumb_path,position),seller:profiles!listings_seller_id_fkey(display_name,avatar_url,profession,professional_status)")
       .eq("country", country).eq("kind", "servicio").eq("status", "activa")
       .textSearch("search", sp.q!, { type: "websearch", config: "spanish" }).order("created_at", { ascending: false }).limit(12);
     if (sp.region) sq = sq.or(`region.eq.${sp.region},coverage_regions.cs.{"${sp.region}"}`);

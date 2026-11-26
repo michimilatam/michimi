@@ -12,6 +12,7 @@
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
+    "@block65/webcrypto-web-push": "2.0.0",
     "@fontsource-variable/outfit": "^5.2.0",
     "@michimi/core": "workspace:*",
     "@opennextjs/cloudflare": "^1.20.18",

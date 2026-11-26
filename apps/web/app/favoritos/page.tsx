@@ -10,7 +10,7 @@ export default async function Favoritos() {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) redirect("/ingresar?next=/favoritos");
   const { data } = await supabase.from("favorites")
-    .select("created_at, l:listings(id,title,price_amount,price_type,currency,condition,city,region,status,listing_photos(path,position))")
+    .select("created_at, l:listings(id,title,price_amount,price_type,currency,condition,city,region,status,listing_photos(path,thumb_path,position))")
     .eq("user_id", u.user.id).order("created_at", { ascending: false });
   const items = (data ?? []).map((x) => x.l as unknown as ListingCardData | null).filter((l): l is ListingCardData => !!l);
   return (

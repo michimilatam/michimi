@@ -14,7 +14,7 @@ export async function SeoListing(p: {
   const supabase = await supabaseServer();
   const svc = p.kind === "servicio";
   let q = supabase.from("listings")
-    .select("id,title,price_amount,price_type,currency,condition,city,region,status,seller_id,coverage_regions,subcategory,listing_photos(path,position),seller:profiles!listings_seller_id_fkey(display_name,avatar_url,profession,professional_status)")
+    .select("id,title,price_amount,price_type,currency,condition,city,region,status,seller_id,coverage_regions,subcategory,listing_photos(path,thumb_path,position),seller:profiles!listings_seller_id_fkey(display_name,avatar_url,profession,professional_status)")
     .eq("country", SEO_COUNTRY).eq("kind", p.kind).in("status", ["activa", "reservada"])
     .order("created_at", { ascending: false }).limit(60);
   if (!svc) q = q.eq("category", p.cat);

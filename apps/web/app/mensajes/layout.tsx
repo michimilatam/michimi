@@ -19,7 +19,7 @@ export default async function MensajesLayout({ children }: { children: React.Rea
 
   const { data: convs } = await supabase
     .from("conversations")
-    .select("id,buyer_id,seller_id,created_at,listing:listings(id,title,status,listing_photos(path,position)),request:service_requests(id,title,status),buyer:profiles!conversations_buyer_id_fkey(display_name,avatar_url),seller:profiles!conversations_seller_id_fkey(display_name,avatar_url)")
+    .select("id,buyer_id,seller_id,created_at,listing:listings(id,title,status,listing_photos(path,thumb_path,position)),request:service_requests(id,title,status),buyer:profiles!conversations_buyer_id_fkey(display_name,avatar_url),seller:profiles!conversations_seller_id_fkey(display_name,avatar_url)")
     .limit(200);
   const rows = (convs as unknown as Row[] | null) ?? [];
   const ids = rows.map((r) => r.id);
@@ -46,9 +46,9 @@ export default async function MensajesLayout({ children }: { children: React.Rea
     const imSeller = r.seller_id === me;
     const other = imSeller ? r.buyer : r.seller;
     const l = last.get(r.id);
-    const cover = [...subject.listing_photos].sort((a, b) => a.position - b.position)[0]?.path ?? null;
+    const cover = [...subject.listing_photos].sort((a, b) => a.position - b.position)[0]; const coverPath = (cover as { thumb_path?: string | null; path: string } | undefined)?.thumb_path ?? cover?.path ?? null;
     const g = groups.get(key) ?? {
-      listingId: key, title: r.request ? `Pedido: ${subject.title}` : subject.title, status: subject.status, cover, role: imSeller ? "vendo" : "compro",
+      listingId: key, title: r.request ? `Pedido: ${subject.title}` : subject.title, status: subject.status, cover: coverPath, role: imSeller ? "vendo" : "compro",
       lastAt: "", unread: 0, conversations: [],
     };
     const item = {

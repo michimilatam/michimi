@@ -14,7 +14,7 @@ export default async function MisPublicaciones() {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) redirect("/ingresar?next=/mis-publicaciones");
   const { data } = await supabase.from("listings")
-    .select("id,title,kind,status,price_amount,price_type,currency,created_at,listing_photos(path,position)")
+    .select("id,title,kind,status,price_amount,price_type,currency,created_at,listing_photos(path,thumb_path,position)")
     .eq("seller_id", u.user.id).is("deleted_at", null).order("created_at", { ascending: false });
 
   return (
@@ -26,7 +26,7 @@ export default async function MisPublicaciones() {
       {!data?.length && <p className="rounded-card border border-dashed border-line p-10 text-center text-ink-soft">Todavía no publicaste nada.</p>}
       <ul className="divide-y divide-line rounded-card border border-line bg-card">
         {data?.map((l) => {
-          const cover = [...l.listing_photos].sort((a, b) => a.position - b.position)[0]?.path;
+          const c0 = [...l.listing_photos].sort((a, b) => a.position - b.position)[0]; const cover = c0?.thumb_path ?? c0?.path;
           return (
             <li key={l.id} className="flex flex-wrap items-center gap-3 p-3">
               <Link href={`/publicacion/${l.id}`} className="flex min-w-0 flex-1 items-center gap-3">
