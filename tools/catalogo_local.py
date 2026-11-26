@@ -351,17 +351,43 @@ class Michimi:
     def __init__(self):
         self.url = os.environ.get("MICHIMI_SUPABASE_URL", "").rstrip("/")
         self.key = os.environ.get("MICHIMI_SERVICE_KEY", "")
+        self.key = self.key.strip().strip('"').strip("'")
+        if self.key.startswith("sb_publishable") or "anon" in self._rol():
+            sys.exit("Esa es la clave pública (publishable/anon). Necesito la SECRETA: sb_secret_... o service_role.")
         if not self.url or not self.key:
             sys.exit("Faltan MICHIMI_SUPABASE_URL y MICHIMI_SERVICE_KEY (ver instrucciones arriba del archivo).")
 
+    def _rol(self) -> str:
+        """Lee el rol de una clave JWT vieja sin validarla (solo para avisar si es la equivocada)."""
+        if not self.key.startswith("eyJ"):
+            return ""
+        try:
+            import base64
+            parte = self.key.split(".")[1]
+            return json.loads(base64.urlsafe_b64decode(parte + "=" * (-len(parte) % 4))).get("role", "")
+        except Exception:
+            return ""
+
     def req(self, method: str, path: str, body=None, extra=None):
-        h = {"apikey": self.key, "Authorization": f"Bearer {self.key}", "Content-Type": "application/json"}
+        # Claves nuevas de Supabase (sb_secret_...) van solo en "apikey";
+        # las viejas (JWT que empieza con eyJ) también en Authorization.
+        h = {"apikey": self.key, "Content-Type": "application/json", "User-Agent": "michimi-catalogo-local/1.1"}
+        if self.key.startswith("eyJ"):
+            h["Authorization"] = f"Bearer {self.key}"
         h.update(extra or {})
         r = urllib.request.Request(f"{self.url}/rest/v1/{path}", method=method, headers=h,
                                    data=json.dumps(body).encode() if body is not None else None)
-        with urllib.request.urlopen(r, timeout=60) as resp:
-            t = resp.read()
-            return json.loads(t) if t else None
+        try:
+            with urllib.request.urlopen(r, timeout=60) as resp:
+                t = resp.read()
+                return json.loads(t) if t else None
+        except urllib.error.HTTPError as e:
+            detalle = e.read().decode("utf-8", "replace")[:500]
+            pista = ""
+            if e.code in (401, 403):
+                pista = ("\nRevisá MICHIMI_SERVICE_KEY: tiene que ser la clave SECRETA (sb_secret_... o la "
+                         "service_role que empieza con eyJ), no la publishable/anon. Y que no tenga espacios ni comillas de más.")
+            sys.exit(f"Supabase respondió {e.code}: {detalle}{pista}")
 
     def invitaciones(self):
         return self.req("GET", "store_invites?select=code,name,website,status&website=not.is.null&status=neq.descartada")

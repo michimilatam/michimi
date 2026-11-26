@@ -13,3 +13,7 @@ language sql security definer set search_path = public stable as $$
 $$;
 grant execute on function store_preview(text) to anon, authenticated;
 notify pgrst, 'reload schema';
+
+-- El script local (catalogo_local.py) usa la clave secreta.
+grant select on public.store_invites to service_role;
+grant select, insert, update on public.store_products to service_role;
