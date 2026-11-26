@@ -15,7 +15,7 @@ export default async function MisPublicaciones() {
   if (!u.user) redirect("/ingresar?next=/mis-publicaciones");
   const { data } = await supabase.from("listings")
     .select("id,title,kind,status,price_amount,price_type,currency,created_at,listing_photos(path,position)")
-    .eq("seller_id", u.user.id).order("created_at", { ascending: false });
+    .eq("seller_id", u.user.id).is("deleted_at", null).order("created_at", { ascending: false });
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">

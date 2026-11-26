@@ -8,6 +8,7 @@ import {
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { isImageFile, prepareImage } from "@/lib/image";
 import { photoUrl } from "@/lib/photo";
+import { DeleteListing } from "./DeleteListing";
 
 export type EditListing = {
   id: string; kind: ListingKind; title: string; description: string | null; category: string; subcategory: string | null; condition: string | null;
@@ -18,7 +19,7 @@ export type EditListing = {
 
 const MAX_PHOTOS = 12;
 
-export function PublicarForm({ initialCountry, initialKind = "producto", edit }: { initialCountry: CountryCode; initialKind?: ListingKind; edit?: EditListing }) {
+export function PublicarForm({ initialCountry, initialKind = "producto", edit, defaultCity }: { initialCountry: CountryCode; initialKind?: ListingKind; edit?: EditListing; defaultCity?: string }) {
   const router = useRouter();
   const [kind, setKindState] = useState<ListingKind>(edit?.kind ?? initialKind);
   const [priceType, setPriceType] = useState<PriceType>(edit?.price_type ?? "fijo");
@@ -261,7 +262,7 @@ export function PublicarForm({ initialCountry, initialKind = "producto", edit }:
         </div>
         <div>
           <label className="label" htmlFor="city">Ciudad</label>
-          <input id="city" name="city" defaultValue={edit?.city} className="field" placeholder={country === "PY" ? "Ej.: Fernando de la Mora" : "Ciudad"} />{err("city")}
+          <input id="city" name="city" defaultValue={edit?.city ?? defaultCity ?? ""} className="field" placeholder={country === "PY" ? "Ej.: Fernando de la Mora" : "Ciudad"} />{err("city")}
         </div>
         {kind === "servicio" && (
           <fieldset className="sm:col-span-2">
@@ -313,6 +314,7 @@ export function PublicarForm({ initialCountry, initialKind = "producto", edit }:
       </div>
       {err("form")}
       <button disabled={busy || processing > 0} className="btn-primary w-full">{busy ? progress ?? "Guardando…" : edit ? "Guardar cambios" : kind === "servicio" ? "Publicar servicio" : "Publicar"}</button>
+          {edit && <DeleteListing id={edit.id} />}
     </form>
   );
 }
