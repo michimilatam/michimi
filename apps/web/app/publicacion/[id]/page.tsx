@@ -7,6 +7,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { photoUrl } from "@/lib/photo";
 import { ContactButtons } from "./ContactButtons";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { StoreBadge } from "@/components/StoreBadge";
 import { ShareButtons } from "@/components/ShareButtons";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { ReportButton } from "@/components/ReportButton";
@@ -20,7 +21,7 @@ async function load(id: string) {
   const supabase = await supabaseServer();
   const { data } = await supabase
     .from("listings")
-    .select("*, listing_photos(path,position), seller:profiles!listings_seller_id_fkey(id,display_name,avatar_url,created_at,last_active_at,profession,professional_status)")
+    .select("*, listing_photos(path,position), seller:profiles!listings_seller_id_fkey(id,display_name,avatar_url,created_at,last_active_at,profession,professional_status,is_store,store_slug)")
     .eq("id", id)
     .maybeSingle();
   return { supabase, l: data };
@@ -123,10 +124,10 @@ export default async function Publicacion({ params, searchParams }: { params: P;
         <ShareButtons path={`/publicacion/${l.id}`} title={l.title} />
         {!isOwner && <ReportButton listingId={l.id} sellerId={l.seller_id} loggedIn={!!auth.user} />}
 
-        <Link href={`/perfil/${l.seller.id}`} className="flex items-center gap-3 rounded-card border border-line bg-card p-4">
+        <Link href={l.seller.is_store && l.seller.store_slug ? `/tienda/${l.seller.store_slug}` : `/perfil/${l.seller.id}`} className="flex items-center gap-3 rounded-card border border-line bg-card p-4">
           {l.seller.avatar_url ? <img src={l.seller.avatar_url} alt="" className="h-12 w-12 rounded-full" /> : <div className="h-12 w-12 rounded-full bg-line" />}
           <div>
-            <p className="flex items-center gap-1.5 font-semibold">{l.seller.display_name}{l.seller.professional_status === "verificado" && <VerifiedBadge label />}</p>
+            <p className="flex items-center gap-1.5 font-semibold">{l.seller.display_name}{l.seller.is_store && <StoreBadge label />}{l.seller.professional_status === "verificado" && <VerifiedBadge label />}</p>
             {svc && l.seller.profession && <p className="text-sm">{l.seller.profession}</p>}
             <p className="text-sm text-ink-soft">
               {svc ? "Profesional" : "Vendedor"}: {r.count ? `${r.score.toFixed(1)}★` : "sin calificaciones"} · {BADGE_LABEL[r.badge]} · {rep?.sales_completed ?? 0} {svc ? "trabajos" : "ventas"}

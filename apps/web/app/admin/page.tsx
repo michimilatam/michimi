@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { VerificationActions, ReportActions, ListingModeration } from "./Actions";
+import { NewStoreInvite, InviteStatus, CopyLink } from "./Stores";
 
 export const metadata: Metadata = { title: "Administración", robots: { index: false } };
 const REASONS: Record<string, string> = { estafa: "Posible estafa", producto_falso: "Producto falso", precio_sospechoso: "Precio sospechoso", spam: "Spam", ofensivo: "Ofensivo", otro: "Otro" };
@@ -38,10 +39,12 @@ export default async function Admin({ searchParams }: { searchParams: SP }) {
         {tab("verificaciones", "Verificaciones", vPend)}
         {tab("denuncias", "Denuncias", rOpen)}
         {tab("publicaciones", "Publicaciones")}
+        {tab("comercios", "Comercios")}
       </nav>
       {t === "verificaciones" && <Verificaciones />}
       {t === "denuncias" && <Denuncias />}
       {t === "publicaciones" && <Publicaciones q={sp.q} />}
+      {t === "comercios" && <Comercios />}
     </div>
   );
 }
@@ -142,6 +145,42 @@ async function Publicaciones({ q }: { q?: string }) {
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+async function Comercios() {
+  const supabase = await supabaseServer();
+  const { data } = await supabase.from("store_invites").select("*").order("created_at", { ascending: false });
+  const owners = (data ?? []).map((i) => i.claimed_by).filter(Boolean) as string[];
+  const counts = new Map<string, number>();
+  if (owners.length) {
+    const { data: ls } = await supabase.from("listings").select("seller_id").in("seller_id", owners).eq("status", "activa");
+    for (const l of ls ?? []) counts.set(l.seller_id, (counts.get(l.seller_id) ?? 0) + 1);
+  }
+  return (
+    <div className="space-y-4">
+      <NewStoreInvite />
+      {!data?.length ? <p className="rounded-card border border-dashed border-line p-8 text-center text-ink-soft">Todavía no hay invitaciones.</p> : (
+        <ul className="space-y-3">
+          {data.map((i) => (
+            <li key={i.code} className="rounded-card border border-line bg-card p-4">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <p className="font-semibold">{i.name} <span className="font-normal text-ink-soft">· /tienda/{i.slug}</span></p>
+                  <p className="text-sm text-ink-soft">{[i.contact, i.website, i.instagram, i.phone, i.city].filter(Boolean).join(" · ")}</p>
+                  {i.claimed_at && <p className="text-sm">Reclamada el {new Date(i.claimed_at).toLocaleDateString("es-PY")} · {counts.get(i.claimed_by) ?? 0} productos activos</p>}
+                </div>
+                <InviteStatus code={i.code} status={i.status} />
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
+                <CopyLink path={`/reclamar/${i.code}`} />
+                {i.status === "reclamada" && <Link href={`/tienda/${i.slug}`} className="underline">Ver tienda</Link>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
