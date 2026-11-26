@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { VerificationActions, ReportActions, ListingModeration } from "./Actions";
-import { NewStoreInvite, InviteStatus, CopyLink } from "./Stores";
+import { NewStoreInvite, InviteStatus, CopyLink, PrepareCatalog } from "./Stores";
 
 export const metadata: Metadata = { title: "Administración", robots: { index: false } };
 const REASONS: Record<string, string> = { estafa: "Posible estafa", producto_falso: "Producto falso", precio_sospechoso: "Precio sospechoso", spam: "Spam", ofensivo: "Ofensivo", otro: "Otro" };
@@ -152,6 +152,9 @@ async function Publicaciones({ q }: { q?: string }) {
 async function Comercios() {
   const supabase = await supabaseServer();
   const { data } = await supabase.from("store_invites").select("*").order("created_at", { ascending: false });
+  const { data: prods } = await supabase.from("store_products").select("invite_code,status");
+  const prep = new Map<string, { p: number; ok: number }>();
+  for (const x of prods ?? []) { const c = prep.get(x.invite_code) ?? { p: 0, ok: 0 }; if (x.status === "pendiente") c.p++; if (x.status === "publicado") c.ok++; prep.set(x.invite_code, c); }
   const owners = (data ?? []).map((i) => i.claimed_by).filter(Boolean) as string[];
   const counts = new Map<string, number>();
   if (owners.length) {
@@ -175,6 +178,8 @@ async function Comercios() {
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
                 <CopyLink path={`/reclamar/${i.code}`} />
+                <span className="text-ink-soft">Catálogo: {prep.get(i.code)?.p ?? 0} por revisar · {prep.get(i.code)?.ok ?? 0} publicados</span>
+                {i.website && i.status !== "descartada" && <PrepareCatalog code={i.code} />}
                 {i.status === "reclamada" && <Link href={`/tienda/${i.slug}`} className="underline">Ver tienda</Link>}
               </div>
             </li>

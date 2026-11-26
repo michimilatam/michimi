@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
-export function ClaimButton({ code }: { code: string }) {
+export function ClaimButton({ code, next }: { code: string; next: string | null }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -11,7 +11,7 @@ export function ClaimButton({ code }: { code: string }) {
     setBusy(true); setErr(null);
     const { data, error } = await supabaseBrowser().rpc("claim_store", { p_code: code });
     if (error) { setErr(error.message); setBusy(false); return; }
-    router.push(`/tienda/${data}`);
+    router.push(next ?? `/tienda/${data}`);
   }
   return (
     <div className="space-y-2">

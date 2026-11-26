@@ -10,7 +10,7 @@ export default async function Reclamar({ params }: { params: Promise<{ code: str
   const { code } = await params;
   const supabase = await supabaseServer();
   const { data } = await supabase.rpc("store_invite_info", { p_code: code });
-  const inv = (data as { name: string; slug: string; status: string }[] | null)?.[0];
+  const inv = (data as { name: string; slug: string; status: string; products: number }[] | null)?.[0];
   if (!inv || inv.status === "descartada") notFound();
   const { data: auth } = await supabase.auth.getUser();
   const { data: me } = auth.user ? await supabase.from("profiles").select("store_slug").eq("id", auth.user.id).maybeSingle() : { data: null };
@@ -20,6 +20,9 @@ export default async function Reclamar({ params }: { params: Promise<{ code: str
     <div className="mx-auto max-w-xl space-y-5">
       <h1 className="text-2xl font-bold">Tu tienda {inv.name} en Michimi</h1>
       <p className="text-[15px]">Te reservamos una tienda gratis en <b>michimi.com/tienda/{inv.slug}</b>. Durante el piloto no cobramos comisión ni mensualidad, y te ayudamos a cargar el catálogo.</p>
+      {inv.products > 0 && (
+        <p className="rounded-card bg-lima/30 p-4 text-[15px]"><b>Ya te preparamos {inv.products} productos</b> tomados de tu web. Al reclamar la tienda los revisás, corregís lo que haga falta y publicás los que quieras. Nada se muestra sin tu confirmación.</p>
+      )}
       <ul className="space-y-2 rounded-card border border-line bg-card p-4 text-[15px]">
         <li>• Sello <b>Comercio</b> en tu perfil y en cada publicación.</li>
         <li>• Página propia con todos tus productos, lista para compartir.</li>
@@ -31,7 +34,7 @@ export default async function Reclamar({ params }: { params: Promise<{ code: str
       ) : inv.status === "reclamada" ? (
         <p className="rounded-card border border-line p-4 text-ink-soft">Esta tienda ya fue reclamada. Si sos el dueño y no fuiste vos, escribinos a comercios@michimi.com.</p>
       ) : auth.user ? (
-        <ClaimButton code={code} />
+        <ClaimButton code={code} next={inv.products > 0 ? "/tienda/mi-catalogo" : null} />
       ) : (
         <Link href={`/ingresar?next=${encodeURIComponent(`/reclamar/${code}`)}`} className="btn-primary">Ingresá para reclamarla</Link>
       )}

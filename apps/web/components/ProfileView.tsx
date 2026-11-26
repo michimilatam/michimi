@@ -42,7 +42,7 @@ export async function ProfileView({ p }: { p: any }) {
           {p.store_phone && <span>{p.store_phone}</span>}
         </p>
       )}
-      {mine && p.is_store && p.store_slug && <p className="text-sm text-ink-soft">Tu tienda: <Link href={`/tienda/${p.store_slug}`} className="underline">michimi.com/tienda/{p.store_slug}</Link></p>}
+      {mine && p.is_store && p.store_slug && <p className="text-sm text-ink-soft">Tu tienda: <Link href={`/tienda/${p.store_slug}`} className="underline">michimi.com/tienda/{p.store_slug}</Link> · <Link href="/tienda/mi-catalogo" className="underline">Revisar catálogo preparado</Link></p>}
       {p.bio && <p className="max-w-2xl whitespace-pre-line text-[15px]">{p.bio}</p>}
       {mine && <Link href="/perfil/editar" className="btn-ghost w-fit">Editar perfil</Link>}
       {mine && <PushToggle userId={id} />}

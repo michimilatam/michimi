@@ -59,3 +59,23 @@ export function CopyLink({ path }: { path: string }) {
     </button>
   );
 }
+
+export function PrepareCatalog({ code }: { code: string }) {
+  const router = useRouter();
+  const [msg, setMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  async function run() {
+    setBusy(true); setMsg(null);
+    const r = await fetch("/api/admin/catalogo", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code }) });
+    const j = (await r.json().catch(() => ({}))) as { count?: number; error?: string };
+    setBusy(false);
+    setMsg(j.error ?? `${j.count} productos leídos`);
+    router.refresh();
+  }
+  return (
+    <span className="inline-flex items-center gap-2">
+      <button type="button" onClick={run} disabled={busy} className="underline">{busy ? "Leyendo la web…" : "Preparar catálogo desde su web"}</button>
+      {msg && <span className="text-ink-soft">{msg}</span>}
+    </span>
+  );
+}
