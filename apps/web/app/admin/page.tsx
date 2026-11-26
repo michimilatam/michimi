@@ -179,6 +179,7 @@ async function Comercios() {
               <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
                 <CopyLink path={`/reclamar/${i.code}`} />
                 <span className="text-ink-soft">Catálogo: {prep.get(i.code)?.p ?? 0} por revisar · {prep.get(i.code)?.ok ?? 0} publicados</span>
+                {i.status !== "descartada" && <Link href={`/reclamar/${i.code}/vista`} className="underline">Vista previa</Link>}
                 {i.website && i.status !== "descartada" && <PrepareCatalog code={i.code} />}
                 {i.status === "reclamada" && <Link href={`/tienda/${i.slug}`} className="underline">Ver tienda</Link>}
               </div>

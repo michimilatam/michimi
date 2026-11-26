@@ -21,7 +21,7 @@ export default async function Reclamar({ params }: { params: Promise<{ code: str
       <h1 className="text-2xl font-bold">Tu tienda {inv.name} en Michimi</h1>
       <p className="text-[15px]">Te reservamos una tienda gratis en <b>michimi.com/tienda/{inv.slug}</b>. Durante el piloto no cobramos comisión ni mensualidad, y te ayudamos a cargar el catálogo.</p>
       {inv.products > 0 && (
-        <p className="rounded-card bg-lima/30 p-4 text-[15px]"><b>Ya te preparamos {inv.products} productos</b> tomados de tu web. Al reclamar la tienda los revisás, corregís lo que haga falta y publicás los que quieras. Nada se muestra sin tu confirmación.</p>
+        <p className="rounded-card bg-lima/30 p-4 text-[15px]"><b>Ya te preparamos {inv.products} productos</b> tomados de tu web. Al reclamar la tienda los revisás, corregís lo que haga falta y publicás los que quieras. Nada se muestra sin tu confirmación. <Link href={`/reclamar/${code}/vista`} className="font-semibold underline">Ver cómo quedaría mi tienda</Link></p>
       )}
       <ul className="space-y-2 rounded-card border border-line bg-card p-4 text-[15px]">
         <li>• Sello <b>Comercio</b> en tu perfil y en cada publicación.</li>
