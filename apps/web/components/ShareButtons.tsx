@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { trackListing } from "@/components/ViewTracker";
 
 const SITE = "https://www.michimi.com";
 
@@ -7,6 +8,8 @@ const SITE = "https://www.michimi.com";
 export function ShareButtons({ path, title, compact = false }: { path: string; title: string; compact?: boolean }) {
   const [copied, setCopied] = useState(false);
   const [open, setOpen] = useState(false);
+  const listingId = path.match(/\/publicacion\/([0-9a-f-]{36})/)?.[1];
+  const track = () => { if (listingId) trackListing(listingId, "share"); };
   const url = `${SITE}${path}`;
   const text = `${title} en Michimi`;
   const e = encodeURIComponent;
@@ -19,18 +22,19 @@ export function ShareButtons({ path, title, compact = false }: { path: string; t
   ];
   async function native() {
     if (typeof navigator !== "undefined" && navigator.share) {
-      try { await navigator.share({ title: text, url }); } catch { /* cancelado */ }
+      try { await navigator.share({ title: text, url }); track(); } catch { /* cancelado */ }
     } else setOpen((o) => !o);
   }
   async function copy() {
     await navigator.clipboard.writeText(url);
+    track();
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
   const chip = "inline-flex h-9 items-center rounded-full border border-line bg-card px-3 text-sm hover:border-ink";
   const list = (
     <div className="flex flex-wrap gap-2">
-      {links.map((l) => <a key={l.name} href={l.href} target="_blank" rel="noopener noreferrer" className={chip}>{l.name}</a>)}
+      {links.map((l) => <a key={l.name} href={l.href} onClick={track} target="_blank" rel="noopener noreferrer" className={chip}>{l.name}</a>)}
       <button type="button" onClick={copy} className={chip}>{copied ? "¡Copiado!" : "Copiar link"}</button>
     </div>
   );

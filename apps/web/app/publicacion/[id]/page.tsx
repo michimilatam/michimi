@@ -10,6 +10,8 @@ import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { ShareButtons } from "@/components/ShareButtons";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { ReportButton } from "@/components/ReportButton";
+import { ViewTracker } from "@/components/ViewTracker";
+import { StatsPanel, statsTips, getStats } from "@/components/ListingStats";
 
 type P = Promise<{ id: string }>;
 type SP = Promise<{ fotos_fallidas?: string }>;
@@ -116,6 +118,8 @@ export default async function Publicacion({ params, searchParams }: { params: P;
         <ContactButtons service={svc} listingId={l.id} currency={l.currency} price={l.price_amount} isOwner={isOwner} loggedIn={!!auth.user} status={l.status} />
 
         {isOwner && <Link href={`/publicacion/${l.id}/editar`} className="btn-ghost w-full">Editar publicación</Link>}
+        {isOwner && <StatsPanel listingId={l.id} tips={statsTips((await getStats([l.id])).get(l.id) ?? { views: 0, views_7d: 0, views_today: 0, shares: 0, favorites: 0, chats: 0, offers: 0 }, { photos: photos.length, daysOnline: Math.floor((Date.now() - new Date(l.created_at).getTime()) / 86_400_000), service: svc, hasDescription: !!l.description })} />}
+        {!isOwner && <ViewTracker listingId={l.id} />}
         <ShareButtons path={`/publicacion/${l.id}`} title={l.title} />
         {!isOwner && <ReportButton listingId={l.id} sellerId={l.seller_id} loggedIn={!!auth.user} />}
 

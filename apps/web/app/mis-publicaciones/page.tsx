@@ -5,6 +5,7 @@ import { formatMoney, formatPrice, type CurrencyCode } from "@michimi/core";
 import { supabaseServer } from "@/lib/supabase/server";
 import { photoUrl } from "@/lib/photo";
 import { ListingActions } from "./ListingActions";
+import { getStats, StatsRow } from "@/components/ListingStats";
 
 export const metadata: Metadata = { title: "Mis publicaciones" };
 const STATUS: Record<string, string> = { activa: "Activa", reservada: "Reservada", vendida: "Vendida", pausada: "Pausada" };
@@ -17,6 +18,7 @@ export default async function MisPublicaciones() {
     .select("id,title,kind,status,price_amount,price_type,currency,created_at,listing_photos(path,thumb_path,position)")
     .eq("seller_id", u.user.id).is("deleted_at", null).order("created_at", { ascending: false });
 
+  const stats = await getStats((data ?? []).map((l) => l.id));
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <header className="flex items-center justify-between gap-3">
@@ -35,6 +37,7 @@ export default async function MisPublicaciones() {
                   <span className="block truncate font-semibold">{l.title}</span>
                   <span className="block text-sm tabular-nums">{formatPrice({ priceType: l.price_type, amount: l.price_amount, currency: l.currency }, (a) => formatMoney({ amount: a, currency: l.currency as CurrencyCode }))}</span>
                   <span className="text-xs text-ink-soft">{l.kind === "servicio" ? "Servicio" : "Producto"} · {STATUS[l.status] ?? l.status}</span>
+                  {stats.get(l.id) && <StatsRow s={stats.get(l.id)!} />}
                 </span>
               </Link>
               <ListingActions id={l.id} title={l.title} status={l.status} />
