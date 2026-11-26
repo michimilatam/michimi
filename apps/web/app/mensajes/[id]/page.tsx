@@ -11,7 +11,7 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
     .select("*, listing:listings(id,title,kind,currency,price_amount,status,listing_photos(path,position)),request:service_requests(id,title,status,currency), buyer:profiles!conversations_buyer_id_fkey(id,display_name,avatar_url,professional_status,created_at), seller:profiles!conversations_seller_id_fkey(id,display_name,avatar_url,professional_status,created_at)")
     .eq("id", id)
     .maybeSingle();
-  if (!c || !u.user) notFound();
+  if (!c || !u.user || (!c.listing && !c.request)) notFound();
   const [{ data: messages }, { data: offers }, { data: op }] = await Promise.all([
     supabase.from("messages").select("*").eq("conversation_id", id).order("created_at"),
     supabase.from("offers").select("*").eq("conversation_id", id),

@@ -136,7 +136,7 @@ export function Chat(props: {
       {props.operation?.status === "cancelada" && (
         <div className="flex flex-wrap items-center justify-between gap-2 bg-line/70 px-4 py-2 text-sm">
           <span>La operación anterior se canceló. Pueden retomarla con {svc ? "un nuevo presupuesto" : "una nueva oferta"}.</span>
-          <button onClick={() => { const last = [...offers].reverse().find((o) => o.status === "aceptada"); setCounter({ parent: null, value: last ? String(last.amount / (cur === "PYG" ? 1 : 100)) : "" }); }}
+          <button onClick={() => setCounter({ parent: null, value: "" })}
             className="rounded-full bg-lima px-3 py-1 font-semibold text-ink">{svc ? (props.role === "vendo" ? "Enviar de nuevo" : "Proponer de nuevo") : "Proponer de nuevo"}</button>
         </div>
       )}
