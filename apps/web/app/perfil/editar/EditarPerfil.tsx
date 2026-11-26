@@ -4,8 +4,9 @@ import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { isImageFile, prepareImage } from "@/lib/image";
 import { photoUrl } from "@/lib/photo";
+import { COUNTRIES, COUNTRY_COOKIE, flag, type CountryCode } from "@michimi/core";
 
-type P = { display_name: string; avatar_url: string | null; city: string | null; bio: string | null; profession: string | null; professional_status: string };
+type P = { display_name: string; avatar_url: string | null; city: string | null; bio: string | null; profession: string | null; professional_status: string; country: string };
 
 export function EditarPerfil({ userId, initial }: { userId: string; initial: P }) {
   const router = useRouter();
@@ -43,7 +44,9 @@ export function EditarPerfil({ userId, initial }: { userId: string; initial: P }
       city: String(f.get("city") ?? "").trim() || null,
       bio: String(f.get("bio") ?? "").trim() || null,
       profession: String(f.get("profession") ?? "").trim() || null,
+      country: String(f.get("country") ?? "PY"),
     }).eq("id", userId);
+    document.cookie = `${COUNTRY_COOKIE}=${String(f.get("country") ?? "PY")}; path=/; max-age=31536000; samesite=lax`;
     if (error) { setBusy(false); return setErr(error.message); }
     router.push(`/perfil/${userId}`);
     router.refresh();
@@ -63,6 +66,13 @@ export function EditarPerfil({ userId, initial }: { userId: string; initial: P }
         <label className="label" htmlFor="name">Nombre que ven los demás</label>
         <input id="name" name="name" defaultValue={initial.display_name} className="field" />
         {verified && <p className="mt-1 text-xs text-ink-soft">Tu cuenta está verificada: usá tu nombre real para que coincida con tu documento.</p>}
+      </div>
+      <div>
+        <label className="label" htmlFor="country">País</label>
+        <select id="country" name="country" defaultValue={initial.country} className="field">
+          {(Object.keys(COUNTRIES) as CountryCode[]).map((k) => <option key={k} value={k}>{flag(k)} {COUNTRIES[k].name}</option>)}
+        </select>
+        <p className="mt-1 text-xs text-ink-soft">Es el país que vas a ver al entrar a Michimi. Siempre podés cambiarlo desde el pie de página.</p>
       </div>
       <div>
         <label className="label" htmlFor="city">Ciudad <span className="font-normal">(opcional)</span></label>

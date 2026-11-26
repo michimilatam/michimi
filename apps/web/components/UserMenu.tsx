@@ -40,7 +40,6 @@ export function UserMenu({ userId, name, avatar, admin = false }: { userId: stri
         <div role="menu" className="absolute right-0 top-12 w-56 overflow-hidden rounded-card border border-line bg-card text-ink shadow-lg">
           <p className="truncate border-b border-line px-4 py-3 text-sm font-semibold">{name}</p>
           <Link role="menuitem" href={`/perfil/${userId}`} onClick={() => setOpen(false)} className="block px-4 py-2.5 text-[15px] hover:bg-paper">Mi perfil y reputación</Link>
-          <Link role="menuitem" href="/perfil/editar" onClick={() => setOpen(false)} className="block px-4 py-2.5 text-[15px] hover:bg-paper">Editar perfil</Link>
           <Link role="menuitem" href="/mis-publicaciones" onClick={() => setOpen(false)} className="block px-4 py-2.5 text-[15px] hover:bg-paper">Mis publicaciones</Link>
           <Link role="menuitem" href="/favoritos" onClick={() => setOpen(false)} className="block px-4 py-2.5 text-[15px] hover:bg-paper">Favoritos</Link>
           <Link role="menuitem" href="/busquedas" onClick={() => setOpen(false)} className="block px-4 py-2.5 text-[15px] hover:bg-paper">Búsquedas guardadas</Link>

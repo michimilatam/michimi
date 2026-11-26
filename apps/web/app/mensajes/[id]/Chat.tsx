@@ -97,6 +97,16 @@ export function Chat(props: {
     const { error } = await supabaseBrowser().from("offers").update({ status: "retirada" }).eq("id", offerId);
     if (error) setErr("Solo quien hizo la oferta puede retirarla.");
   }
+  /** Trae mensajes y ofertas recién creados (el que envía los ve al instante, sin esperar el tiempo real). */
+  async function reload() {
+    const supabase = supabaseBrowser();
+    const [{ data: ms }, { data: os }] = await Promise.all([
+      supabase.from("messages").select("*").eq("conversation_id", convId).order("created_at"),
+      supabase.from("offers").select("*").eq("conversation_id", convId),
+    ]);
+    if (ms) setMessages(ms as Msg[]);
+    if (os) setOffers(os as Offer[]);
+  }
   async function sendCounter() {
     if (!counter) return;
     const m = parseMoney(counter.value, cur);
@@ -104,7 +114,7 @@ export function Chat(props: {
     const p = props.conversation.listing.price_amount;
     if (p && m.amount > p * 20 && !confirm(`¿Seguro? ${formatMoney(m)} es mucho más que el precio publicado.`)) return;
     const { error } = await supabaseBrowser().rpc("make_offer", { p_conversation: convId, p_amount: m.amount, p_currency: cur, p_parent: counter.parent ?? undefined });
-    if (error) setErr(error.message); else setCounter(null);
+    if (error) setErr(error.message); else { setCounter(null); reload(); }
   }
 
   return (
@@ -150,7 +160,12 @@ export function Chat(props: {
         {messages.length === 0 && <li className="py-8 text-center text-sm text-ink-soft">Empezá la conversación. Las ofertas formales aparecen como tarjetas.</li>}
         {messages.map((m) => {
           const mine = m.sender_id === props.me;
-          if (m.kind === "sistema") return <li key={m.id} className="mx-auto max-w-md rounded-full bg-line/60 px-3 py-1 text-center text-xs text-ink-soft">{m.body}</li>;
+          if (m.kind === "sistema") return (
+            <li key={m.id} className="mx-auto max-w-md rounded-2xl bg-line/60 px-3 py-1.5 text-center text-xs text-ink-soft">
+              {m.body}
+              {props.operation && /PIN/.test(m.body) && <Link href={`/operacion/${props.operation.id}`} className="mt-1 block font-semibold text-ink underline">Ver PIN, entrega y calificación →</Link>}
+            </li>
+          );
           if (m.kind === "oferta") {
             const o = offers.find((x) => x.id === m.offer_id);
             if (!o) return null;
