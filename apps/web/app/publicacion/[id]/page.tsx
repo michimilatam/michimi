@@ -110,7 +110,6 @@ export default async function Publicacion({ params, searchParams }: { params: P;
             {l.accessories && (<><dt className="text-ink-soft">Incluye</dt><dd>{l.accessories}</dd></>)}
           </dl>
           <p className="mt-3 text-sm"><b>Defectos declarados:</b> {l.defects || "El vendedor no declaró defectos."}</p>
-          <p className="mt-1 text-sm text-warn">Sin verificar por Michimi: funcionamiento y estado. Revisalo al retirar, antes de dar tu PIN.</p>
         </section>
         )}
 

@@ -13,7 +13,7 @@ import { DeleteListing } from "./DeleteListing";
 export type EditListing = {
   id: string; kind: ListingKind; title: string; description: string | null; category: string; subcategory: string | null; condition: string | null;
   price_type: PriceType; price_amount: number | null; currency: CurrencyCode; country: CountryCode; region: string; city: string;
-  coverage_regions: string[]; schedule: string | null; defects: string | null; accessories: string | null; attributes: Record<string, string> | null;
+  status: string; coverage_regions: string[]; schedule: string | null; defects: string | null; accessories: string | null; attributes: Record<string, string> | null;
   photos: { id: number | string; path: string; position: number }[];
 };
 
@@ -184,7 +184,13 @@ export function PublicarForm({ initialCountry, initialKind = "producto", edit, d
             {kept.map((p, i) => (
               <div key={p.path} className="relative">
                 <img src={photoUrl(p.path)} alt={`Foto actual ${i + 1}`} className="aspect-square w-full rounded-lg object-cover" />
-                {i === 0 && <span className="absolute bottom-1 left-1 rounded bg-ink px-1.5 text-[11px] text-lima">Portada</span>}
+                {i === 0
+                  ? <span className="absolute bottom-1 left-1 rounded bg-ink px-1.5 text-[11px] text-lima">Portada</span>
+                  : <button type="button" onClick={() => setKept((k) => [p, ...k.filter((x) => x.path !== p.path)])} className="absolute bottom-1 left-1 rounded bg-card/90 px-1.5 text-[11px] font-semibold ring-1 ring-line">Hacer portada</button>}
+                <div className="absolute bottom-1 right-1 flex gap-0.5">
+                  {i > 0 && <button type="button" aria-label={`Mover foto ${i + 1} a la izquierda`} onClick={() => setKept((k) => { const a = [...k]; [a[i - 1], a[i]] = [a[i], a[i - 1]]; return a; })} className="h-6 w-6 rounded-full bg-ink/80 text-xs text-white">←</button>}
+                  {i < kept.length - 1 && <button type="button" aria-label={`Mover foto ${i + 1} a la derecha`} onClick={() => setKept((k) => { const a = [...k]; [a[i + 1], a[i]] = [a[i], a[i + 1]]; return a; })} className="h-6 w-6 rounded-full bg-ink/80 text-xs text-white">→</button>}
+                </div>
                 <button type="button" onClick={() => setKept((k) => k.filter((x) => x.path !== p.path))}
                   className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-ink/80 text-sm text-white" aria-label={`Quitar foto ${i + 1}`}>×</button>
               </div>
@@ -196,7 +202,11 @@ export function PublicarForm({ initialCountry, initialKind = "producto", edit, d
             {previews.map((src, i) => (
               <div key={src} className="relative">
                 <img src={src} alt={`Foto ${i + 1}`} className="aspect-square w-full rounded-lg object-cover" />
-                {i === 0 && <span className="absolute bottom-1 left-1 rounded bg-ink px-1.5 text-[11px] text-lima">Portada</span>}
+                {i === 0 && kept.length === 0 && <span className="absolute bottom-1 left-1 rounded bg-ink px-1.5 text-[11px] text-lima">Portada</span>}
+                <div className="absolute bottom-1 right-1 flex gap-0.5">
+                  {i > 0 && <button type="button" aria-label={`Mover foto ${i + 1} a la izquierda`} onClick={() => setFiles((k) => { const a = [...k]; [a[i - 1], a[i]] = [a[i], a[i - 1]]; return a; })} className="h-6 w-6 rounded-full bg-ink/80 text-xs text-white">←</button>}
+                  {i < files.length - 1 && <button type="button" aria-label={`Mover foto ${i + 1} a la derecha`} onClick={() => setFiles((k) => { const a = [...k]; [a[i + 1], a[i]] = [a[i], a[i + 1]]; return a; })} className="h-6 w-6 rounded-full bg-ink/80 text-xs text-white">→</button>}
+                </div>
                 <button type="button" onClick={() => setFiles((p) => p.filter((_, j) => j !== i))}
                   className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-ink/80 text-sm text-white" aria-label={`Quitar foto ${i + 1}`}>×</button>
               </div>
@@ -314,7 +324,7 @@ export function PublicarForm({ initialCountry, initialKind = "producto", edit, d
       </div>
       {err("form")}
       <button disabled={busy || processing > 0} className="btn-primary w-full">{busy ? progress ?? "Guardando…" : edit ? "Guardar cambios" : kind === "servicio" ? "Publicar servicio" : "Publicar"}</button>
-          {edit && <DeleteListing id={edit.id} />}
+          {edit && <DeleteListing id={edit.id} status={edit.status} />}
     </form>
   );
 }
