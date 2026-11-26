@@ -18,13 +18,13 @@ export interface ListingCardData {
   seller?: { professional_status?: string | null } | null;
 }
 
-export function ListingCard({ l, faved }: { l: ListingCardData; faved?: boolean }) {
+export function ListingCard({ l, faved, priority = false }: { l: ListingCardData; faved?: boolean; priority?: boolean }) {
   const cover = [...l.listing_photos].sort((a, b) => a.position - b.position)[0];
   return (
     <Link href={`/publicacion/${l.id}`} className="group block overflow-hidden rounded-card border border-line bg-card">
       <div className="relative flex aspect-square items-center justify-center bg-line">
         {cover ? (
-          <img src={photoUrl(cover.thumb_path ?? cover.path)} alt="" width={480} height={480} decoding="async" className="h-full w-full object-cover" loading="lazy" />
+          <img src={photoUrl(cover.thumb_path ?? cover.path)} alt="" width={480} height={480} decoding="async" className="h-full w-full object-cover" loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "auto"} />
         ) : (
           <span className="text-sm text-ink-soft">Sin fotos</span>
         )}

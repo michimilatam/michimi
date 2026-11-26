@@ -33,7 +33,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <header className="sticky top-0 z-20 bg-ink text-white">
           <nav className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 md:h-16 md:flex-nowrap md:py-0">
             <Link href="/" aria-label="Michimi, inicio" className="mr-auto shrink-0 md:mr-0">
-              <img src="/logo-horizontal-oscuro.svg" alt="Michimi" className="h-8 w-auto" />
+              <img src="/logo-horizontal-oscuro.svg" alt="Michimi" width={96} height={32} className="h-8 w-auto" />
             </Link>
             <Suspense fallback={<div className="order-last h-10 w-full md:order-none md:flex-1" />}><HeaderSearch /></Suspense>
             {data.user && <MessagesBadge userId={data.user.id} />}

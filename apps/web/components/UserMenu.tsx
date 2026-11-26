@@ -34,7 +34,7 @@ export function UserMenu({ userId, name, avatar, admin = false }: { userId: stri
     <div ref={ref} className="relative">
       <button onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label="Menú de usuario"
         className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white/15 font-semibold hover:ring-2 hover:ring-lima">
-        {avatar ? <img src={avatar} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" /> : initial}
+        {avatar ? <img src={avatar} alt="" width={40} height={40} className="h-full w-full object-cover" referrerPolicy="no-referrer" /> : initial}
       </button>
       {open && (
         <div role="menu" className="absolute right-0 top-12 w-56 overflow-hidden rounded-card border border-line bg-card text-ink shadow-lg">

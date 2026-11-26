@@ -29,7 +29,7 @@ export function ServiceCard({ l, rep, faved }: { l: ServiceCardData; faved?: boo
       {faved !== undefined && <FavoriteButton listingId={l.id} initial={faved} className="absolute right-3 top-3" />}
       <div className="flex items-center gap-3 p-4 pr-12">
         {s?.avatar_url
-          ? <img src={s.avatar_url} alt="" className="h-14 w-14 rounded-full object-cover" referrerPolicy="no-referrer" />
+          ? <img src={s.avatar_url} alt="" width={56} height={56} className="h-14 w-14 rounded-full object-cover" referrerPolicy="no-referrer" />
           : <span className="flex h-14 w-14 items-center justify-center rounded-full bg-ink text-xl font-bold text-lima">{(s?.display_name[0] ?? "U").toUpperCase()}</span>}
         <div className="min-w-0">
           <p className="flex items-center gap-1.5 truncate font-semibold">{s?.display_name}{s?.professional_status === "verificado" && <VerifiedBadge />}</p>

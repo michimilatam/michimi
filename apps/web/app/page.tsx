@@ -186,7 +186,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {(data as unknown as ListingCardData[] | null)?.map((l) => <ListingCard key={l.id} l={l} faved={auth.user ? favs.has(l.id) : undefined} />)}
+              {(data as unknown as ListingCardData[] | null)?.map((l, i) => <ListingCard key={l.id} l={l} priority={i < 4} faved={auth.user ? favs.has(l.id) : undefined} />)}
             </div>
           )}
           </>}
