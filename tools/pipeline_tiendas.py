@@ -184,7 +184,7 @@ def catalogar(path: str, modelo: str, maximo: int, lote: int):
         print(f"\n[{n}/{len(pend)}] === {r['nombre']} ===")
         inicio = time.time()
         try:
-            prods = cl.armar(r["web"], modelo, maximo)
+            prods = cl.armar(r["web"], modelo, maximo, r["rubro"] or "hogar")
             if prods:
                 m.cargar(r["codigo"], prods)
             r["productos_cargados"] = str(len(prods))

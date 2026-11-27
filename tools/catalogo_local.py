@@ -55,17 +55,300 @@ UA = "MichimiCatalogBot/1.0 (+https://www.michimi.com; comercios@michimi.com)"
 OLLAMA = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 PAUSA = 1.0  # segundos entre pedidos a la misma web
 
-SUBCATEGORIAS = {
-    "living-y-comedor": "Living y comedor (sofás, sillones, mesas, sillas, racks, aparadores)",
-    "dormitorio": "Dormitorio (camas, cabeceras, mesas de luz, placares, cómodas)",
-    "cocina-y-vajilla": "Cocina y vajilla (platos, tazas, ollas, utensilios)",
-    "bano": "Baño (griferías, accesorios de baño)",
-    "decoracion": "Decoración (cuadros, espejos, jarrones, adornos, velas)",
-    "iluminacion": "Iluminación (lámparas, apliques, luminarias)",
-    "colchones-y-textiles": "Colchones y textiles (colchones, almohadas, sábanas, cortinas, alfombras, almohadones)",
-    "jardin-y-exterior": "Jardín y exterior (plantas, macetas, herramientas de jardín, muebles de exterior)",
-    "piletas-y-accesorios": "Piletas y accesorios",
+CATEGORIAS = {
+ "celulares": {
+  "label": "Celulares y telefonía",
+  "subs": {
+   "celulares-y-smartphones": "Celulares y smartphones",
+   "smartwatches-y-wearables": "Smartwatches y wearables",
+   "accesorios-para-celulares": "Accesorios para celulares",
+   "fundas-y-protectores": "Fundas y protectores",
+   "cargadores-y-cables": "Cargadores y cables",
+   "repuestos-de-celulares": "Repuestos de celulares",
+   "telefonos-fijos-e-inalambricos": "Teléfonos fijos e inalámbricos"
+  }
+ },
+ "computacion": {
+  "label": "Computación",
+  "subs": {
+   "notebooks": "Notebooks",
+   "pc-de-escritorio": "PC de escritorio",
+   "monitores": "Monitores",
+   "tablets-y-lectores": "Tablets y lectores",
+   "componentes-de-pc": "Componentes de PC",
+   "teclados-mouse-y-perifericos": "Teclados, mouse y periféricos",
+   "impresoras-y-escaneres": "Impresoras y escáneres",
+   "redes-y-wifi": "Redes y wifi",
+   "almacenamiento-y-discos": "Almacenamiento y discos"
+  }
+ },
+ "electronica": {
+  "label": "Electrónica, audio y video",
+  "subs": {
+   "televisores": "Televisores",
+   "audio-y-parlantes": "Audio y parlantes",
+   "auriculares": "Auriculares",
+   "camaras-y-fotografia": "Cámaras y fotografía",
+   "drones": "Drones",
+   "proyectores": "Proyectores",
+   "home-theater": "Home theater",
+   "accesorios-de-audio-y-video": "Accesorios de audio y video"
+  }
+ },
+ "consolas": {
+  "label": "Consolas y videojuegos",
+  "subs": {
+   "consolas": "Consolas",
+   "videojuegos": "Videojuegos",
+   "joysticks-y-accesorios": "Joysticks y accesorios",
+   "juegos-de-pc": "Juegos de PC",
+   "retro-y-coleccionables": "Retro y coleccionables"
+  }
+ },
+ "electrodomesticos": {
+  "label": "Electrodomésticos",
+  "subs": {
+   "heladeras-y-freezers": "Heladeras y freezers",
+   "lavarropas-y-secarropas": "Lavarropas y secarropas",
+   "aires-acondicionados-y-ventiladores": "Aires acondicionados y ventiladores",
+   "cocinas-y-hornos": "Cocinas y hornos",
+   "microondas": "Microondas",
+   "pequenos-electrodomesticos-de-cocina": "Pequeños electrodomésticos de cocina",
+   "aspiradoras-y-limpieza": "Aspiradoras y limpieza",
+   "calefaccion": "Calefacción"
+  }
+ },
+ "muebles": {
+  "label": "Hogar, muebles y jardín",
+  "subs": {
+   "living-y-comedor": "Living y comedor",
+   "dormitorio": "Dormitorio",
+   "cocina-y-vajilla": "Cocina y vajilla",
+   "bano": "Baño",
+   "decoracion": "Decoración",
+   "iluminacion": "Iluminación",
+   "colchones-y-textiles": "Colchones y textiles",
+   "jardin-y-exterior": "Jardín y exterior",
+   "piletas-y-accesorios": "Piletas y accesorios"
+  }
+ },
+ "herramientas": {
+  "label": "Herramientas y construcción",
+  "subs": {
+   "herramientas-electricas": "Herramientas eléctricas",
+   "herramientas-manuales": "Herramientas manuales",
+   "generadores-y-compresores": "Generadores y compresores",
+   "materiales-de-construccion": "Materiales de construcción",
+   "pinturas": "Pinturas",
+   "plomeria": "Plomería",
+   "electricidad": "Electricidad",
+   "escaleras-y-andamios": "Escaleras y andamios"
+  }
+ },
+ "vehiculos": {
+  "label": "Autos, motos y náutica",
+  "subs": {
+   "autos": "Autos",
+   "camionetas-y-suv": "Camionetas y SUV",
+   "motos": "Motos",
+   "cuatriciclos": "Cuatriciclos",
+   "nautica": "Náutica",
+   "camiones-y-maquinaria-pesada": "Camiones y maquinaria pesada"
+  }
+ },
+ "repuestos": {
+  "label": "Repuestos y accesorios para vehículos",
+  "subs": {
+   "repuestos-de-autos": "Repuestos de autos",
+   "repuestos-de-motos": "Repuestos de motos",
+   "neumaticos-y-llantas": "Neumáticos y llantas",
+   "audio-y-multimedia-para-autos": "Audio y multimedia para autos",
+   "accesorios-exteriores": "Accesorios exteriores",
+   "accesorios-interiores": "Accesorios interiores",
+   "herramientas-para-vehiculos": "Herramientas para vehículos"
+  }
+ },
+ "moda": {
+  "label": "Ropa y calzado",
+  "subs": {
+   "ropa-de-mujer": "Ropa de mujer",
+   "ropa-de-hombre": "Ropa de hombre",
+   "calzado-de-mujer": "Calzado de mujer",
+   "calzado-de-hombre": "Calzado de hombre",
+   "ropa-deportiva": "Ropa deportiva",
+   "carteras-bolsos-y-mochilas": "Carteras, bolsos y mochilas",
+   "accesorios-de-moda": "Accesorios de moda"
+  }
+ },
+ "joyas": {
+  "label": "Joyas y relojes",
+  "subs": {
+   "relojes": "Relojes",
+   "anillos": "Anillos",
+   "collares-y-cadenas": "Collares y cadenas",
+   "aros": "Aros",
+   "pulseras": "Pulseras",
+   "bijouterie": "Bijouterie",
+   "lentes-de-sol": "Lentes de sol"
+  }
+ },
+ "belleza": {
+  "label": "Salud y belleza",
+  "subs": {
+   "perfumes": "Perfumes",
+   "maquillaje": "Maquillaje",
+   "cuidado-de-la-piel": "Cuidado de la piel",
+   "cuidado-del-cabello": "Cuidado del cabello",
+   "afeitado-y-depilacion": "Afeitado y depilación",
+   "manicura-y-pedicura": "Manicura y pedicura",
+   "equipamiento-de-salud": "Equipamiento de salud"
+  }
+ },
+ "bebes": {
+  "label": "Bebés y niños",
+  "subs": {
+   "ropa-de-bebe": "Ropa de bebé",
+   "ropa-de-ninos": "Ropa de niños",
+   "cochecitos-y-sillas-de-auto": "Cochecitos y sillas de auto",
+   "cunas-y-muebles-infantiles": "Cunas y muebles infantiles",
+   "lactancia-y-alimentacion": "Lactancia y alimentación",
+   "juguetes-para-bebes": "Juguetes para bebés",
+   "seguridad-infantil": "Seguridad infantil"
+  }
+ },
+ "juguetes": {
+  "label": "Juguetes y juegos",
+  "subs": {
+   "juegos-de-mesa": "Juegos de mesa",
+   "munecas-y-figuras-de-accion": "Muñecas y figuras de acción",
+   "bloques-y-armables": "Bloques y armables",
+   "vehiculos-de-juguete": "Vehículos de juguete",
+   "peluches": "Peluches",
+   "rompecabezas": "Rompecabezas",
+   "juguetes-al-aire-libre": "Juguetes al aire libre"
+  }
+ },
+ "deportes": {
+  "label": "Deportes y fitness",
+  "subs": {
+   "bicicletas": "Bicicletas",
+   "fitness-y-gimnasio": "Fitness y gimnasio",
+   "futbol": "Fútbol",
+   "tenis-y-padel": "Tenis y pádel",
+   "camping-y-pesca": "Camping y pesca",
+   "natacion-y-playa": "Natación y playa",
+   "patines-skate-y-scooters": "Patines, skate y scooters",
+   "deportes-de-combate": "Deportes de combate"
+  }
+ },
+ "instrumentos": {
+  "label": "Instrumentos musicales",
+  "subs": {
+   "guitarras-y-bajos": "Guitarras y bajos",
+   "teclados-y-pianos": "Teclados y pianos",
+   "baterias-y-percusion": "Baterías y percusión",
+   "instrumentos-de-viento": "Instrumentos de viento",
+   "amplificadores": "Amplificadores",
+   "audio-profesional-y-dj": "Audio profesional y DJ",
+   "accesorios-musicales": "Accesorios musicales"
+  }
+ },
+ "libros": {
+  "label": "Libros, música y películas",
+  "subs": {
+   "libros": "Libros",
+   "libros-de-estudio": "Libros de estudio",
+   "revistas-y-comics": "Revistas y cómics",
+   "vinilos": "Vinilos",
+   "cds": "CDs",
+   "peliculas-y-series": "Películas y series"
+  }
+ },
+ "coleccionables": {
+  "label": "Arte y coleccionables",
+  "subs": {
+   "arte-y-cuadros": "Arte y cuadros",
+   "antiguedades": "Antigüedades",
+   "monedas-y-billetes": "Monedas y billetes",
+   "estampillas": "Estampillas",
+   "cartas-coleccionables": "Cartas coleccionables",
+   "figuras-y-memorabilia": "Figuras y memorabilia",
+   "articulos-firmados": "Artículos firmados"
+  }
+ },
+ "mascotas": {
+  "label": "Mascotas (accesorios)",
+  "subs": {
+   "perros": "Perros",
+   "gatos": "Gatos",
+   "peces-y-acuarios": "Peces y acuarios",
+   "aves": "Aves",
+   "camas-y-casas": "Camas y casas",
+   "transportadoras-y-paseo": "Transportadoras y paseo"
+  }
+ },
+ "negocios": {
+  "label": "Negocios, oficina e industria",
+  "subs": {
+   "equipamiento-gastronomico": "Equipamiento gastronómico",
+   "equipamiento-comercial": "Equipamiento comercial",
+   "mobiliario-de-oficina": "Mobiliario de oficina",
+   "insumos-de-oficina": "Insumos de oficina",
+   "maquinaria-industrial": "Maquinaria industrial",
+   "agro-y-ganaderia": "Agro y ganadería"
+  }
+ },
+ "alimentos": {
+  "label": "Alimentos y bebidas",
+  "subs": {
+   "panificados-y-reposteria": "Panificados y repostería",
+   "comidas-caseras-y-viandas": "Comidas caseras y viandas",
+   "bebidas": "Bebidas",
+   "productos-regionales-y-artesanales": "Productos regionales y artesanales",
+   "organicos-y-saludables": "Orgánicos y saludables",
+   "dulces-mermeladas-y-conservas": "Dulces, mermeladas y conservas",
+   "carnes-quesos-y-fiambres": "Carnes, quesos y fiambres",
+   "frutas-verduras-y-huevos": "Frutas, verduras y huevos",
+   "otros-alimentos": "Otros alimentos"
+  }
+ },
+ "otros": {
+  "label": "Otros",
+  "subs": {
+   "otros": "Otros"
+  }
+ }
 }
+
+# Rubro del comercio (columna "rubro" de tiendas.csv) -> categorías de Michimi donde puede caer.
+RUBRO_CATEGORIAS = {
+    "hogar": ["muebles", "electrodomesticos", "herramientas"],
+    "moda": ["moda", "joyas"],
+    "belleza": ["belleza"],
+    "perfume": ["belleza"],
+    "joya": ["joyas", "moda"],
+    "accesorio": ["joyas", "moda"],
+    "tecnolog": ["celulares", "computacion", "electronica", "consolas"],
+    "deporte": ["deportes", "repuestos"],
+    "beb": ["bebes", "juguetes"],
+    "juguete": ["juguetes", "bebes"],
+    "arte": ["coleccionables", "muebles", "moda"],
+    "artesan": ["coleccionables", "muebles", "moda"],
+    "salud": ["belleza", "deportes"],
+    "aliment": ["alimentos"],
+    "mascota": ["mascotas"],
+    "libro": ["libros", "negocios"],
+    "papeler": ["negocios", "libros"],
+}
+
+
+def categorias_de(rubro: str) -> list[str]:
+    r = (rubro or "").lower()
+    for clave, cats in RUBRO_CATEGORIAS.items():
+        if clave in r:
+            return cats
+    return ["muebles"]
+
 
 REGLAS = [
     (r"maceta|planta|jard[ií]n|exterior|vivero|semilla|abono|sustrato|riego|c[eé]sped|suculenta|cactus|orqu[ií]dea", "jardin-y-exterior"),
@@ -171,19 +454,28 @@ def ollama(modelo: str, prompt: str) -> dict | None:
         return None
 
 
-def clasificar(modelo: str, titulo: str, desc: str) -> str:
-    sub = subcat_por_reglas(titulo)
-    if sub:
-        return sub
-    opciones = "\n".join(f"- {k}: {v}" for k, v in SUBCATEGORIAS.items())
-    r = ollama(modelo, f"""Clasificá este producto de una tienda de hogar en UNA subcategoría.
+def clasificar(modelo: str, titulo: str, desc: str, cats: list[str]) -> tuple[str, str]:
+    """Devuelve (categoría, subcategoría) de Michimi dentro de las categorías posibles del rubro."""
+    if cats == ["muebles"] or cats[0] == "muebles":
+        sub = subcat_por_reglas(titulo)
+        if sub:
+            return "muebles", sub
+    opciones = {f"{c}/{s}": f"{CATEGORIAS[c]['label']} > {label}" for c in cats for s, label in CATEGORIAS[c]["subs"].items()}
+    if len(opciones) == 1:
+        k = next(iter(opciones))
+        return tuple(k.split("/", 1))  # type: ignore[return-value]
+    lista = "\n".join(f"- {k}: {v}" for k, v in opciones.items())
+    r = ollama(modelo, f"""Clasificá este producto de una tienda paraguaya en UNA de estas opciones.
 Producto: {titulo}
 Descripción: {desc[:400]}
-Subcategorías:
-{opciones}
-Respondé solo JSON: {{"subcategoria": "<clave>"}}""")
-    sub = (r or {}).get("subcategoria")
-    return sub if sub in SUBCATEGORIAS else (subcat_por_reglas(desc) or "decoracion")
+Opciones (clave: significado):
+{lista}
+Respondé solo JSON: {{"opcion": "<clave exacta>"}}""")
+    k = (r or {}).get("opcion", "")
+    if k in opciones:
+        return tuple(k.split("/", 1))  # type: ignore[return-value]
+    c = cats[0]
+    return c, next(iter(CATEGORIAS[c]["subs"]))
 
 
 def extraer_con_ia(modelo: str, url: str, pagina: str) -> dict | None:
@@ -390,13 +682,13 @@ class Michimi:
             sys.exit(f"Supabase respondió {e.code}: {detalle}{pista}")
 
     def invitaciones(self):
-        return self.req("GET", "store_invites?select=code,name,website,status&website=not.is.null&status=neq.descartada")
+        return self.req("GET", "store_invites?select=code,name,website,status,note&website=not.is.null&status=neq.descartada")
 
     def cargar(self, codigo: str, productos: list[dict]):
         filas = [{
             "invite_code": codigo, "external_id": p["external_id"], "title": p["title"],
             "description": p["description"] or None, "price_amount": p["price_amount"], "currency": "PYG",
-            "category": "muebles", "subcategory": p["subcategory"], "image_urls": p["image_urls"],
+            "category": p.get("category", "muebles"), "subcategory": p["subcategory"], "image_urls": p["image_urls"],
             "source_url": p["source_url"],
         } for p in productos]
         for i in range(0, len(filas), 100):
@@ -405,7 +697,8 @@ class Michimi:
 
 
 # ---------------------------------------------------------------- principal
-def armar(web: str, modelo: str, maximo: int) -> list[dict]:
+def armar(web: str, modelo: str, maximo: int, rubro: str = "hogar") -> list[dict]:
+    cats = categorias_de(rubro)
     w = Web(origen(web))
     log(f"→ {w.base}")
     prods = desde_shopify(w, maximo)
@@ -426,7 +719,7 @@ def armar(web: str, modelo: str, maximo: int) -> list[dict]:
         vistos.add(titulo.lower())
         p["title"] = titulo
         p["description"] = (p.get("description") or "")[:4000]
-        p["subcategory"] = clasificar(modelo, f"{p.get('hint', '')} {titulo}", p["description"])
+        p["category"], p["subcategory"] = clasificar(modelo, f"{p.get('hint', '')} {titulo}", p["description"], cats)
         final.append(p)
     con_precio = sum(1 for p in final if p["price_amount"])
     log(f"   listo: {len(final)} productos ({con_precio} con precio)")
@@ -438,6 +731,7 @@ def main():
     ap.add_argument("--codigo", help="código de la invitación (lo ves en el link /reclamar/<código>)")
     ap.add_argument("--web", help="sitio web del comercio")
     ap.add_argument("--todos", action="store_true", help="todas las invitaciones con web cargada")
+    ap.add_argument("--rubro", default="hogar", help="rubro del comercio: hogar, moda, belleza, tecnología, deportes…")
     ap.add_argument("--modelo", default="qwen2.5:7b")
     ap.add_argument("--max", type=int, default=300)
     ap.add_argument("--solo-ver", action="store_true", help="no carga en Michimi; guarda un JSON")
@@ -445,16 +739,16 @@ def main():
 
     if a.todos:
         m = Michimi()
-        trabajos = [(i["code"], i["website"], i["name"]) for i in m.invitaciones()]
+        trabajos = [(i["code"], i["website"], i["name"], (i.get("note") or "hogar").split("·")[0]) for i in m.invitaciones()]
     elif a.codigo and a.web:
         m = None if a.solo_ver else Michimi()
-        trabajos = [(a.codigo, a.web, a.codigo)]
+        trabajos = [(a.codigo, a.web, a.codigo, a.rubro)]
     else:
         ap.error("usá --codigo y --web, o --todos")
 
-    for codigo, web, nombre in trabajos:
+    for codigo, web, nombre, rubro in trabajos:
         log(f"\n=== {nombre} ===")
-        prods = armar(web, a.modelo, a.max)
+        prods = armar(web, a.modelo, a.max, rubro)
         if not prods:
             log("   no se encontraron productos con foto: queda para carga manual")
             continue

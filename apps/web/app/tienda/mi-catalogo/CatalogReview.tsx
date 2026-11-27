@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CATEGORIES } from "@michimi/core";
+import { CATEGORIES, type CategorySlug } from "@michimi/core";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { prepareImage, makeThumb } from "@/lib/image";
 
@@ -10,7 +10,7 @@ export type Draft = {
   category: string; subcategory: string | null; image_urls: string[]; source_url: string | null;
 };
 
-const SUBS = CATEGORIES.muebles.subs;
+const subsOf = (c: string) => (CATEGORIES[c as CategorySlug] ?? CATEGORIES.muebles).subs;
 const fmt = (n: number | null) => (n ? n.toLocaleString("es-PY") : "");
 
 export function CatalogReview({ items, userId, storeId, city, region, slug }: { items: Draft[]; userId: string; storeId: string; city: string; region: string | null; slug: string }) {
@@ -97,7 +97,7 @@ export function CatalogReview({ items, userId, storeId, city, region, slug }: { 
                     onChange={(e) => upd(d.id, { price_amount: Number(e.target.value.replace(/\D/g, "")) || null })} className="field h-9 w-32 text-sm" />
                 </label>
                 <select value={d.subcategory ?? ""} onChange={(e) => upd(d.id, { subcategory: e.target.value })} className="field h-9 w-auto text-sm">
-                  {SUBS.map((s) => <option key={s.slug} value={s.slug}>{s.label}</option>)}
+                  {subsOf(d.category).map((s) => <option key={s.slug} value={s.slug}>{s.label}</option>)}
                 </select>
                 <span className="self-center text-xs text-ink-soft">{d.image_urls.length} fotos</span>
               </div>

@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Vista previa de tu tienda", robots: 
 type Row = { name: string; slug: string; city: string | null; website: string | null; instagram: string | null; phone: string | null;
   id: string | null; title: string | null; price_amount: number | null; currency: string | null; subcategory: string | null; image: string | null };
 
-const SUB = new Map(CATEGORIES.muebles.subs.map((s) => [s.slug, s.label]));
+const SUB = new Map(Object.values(CATEGORIES).flatMap((c) => c.subs.map((s) => [s.slug, s.label] as const)));
 
 export default async function Vista({ params, searchParams }: { params: Promise<{ code: string }>; searchParams: Promise<{ s?: string }> }) {
   const { code } = await params;
