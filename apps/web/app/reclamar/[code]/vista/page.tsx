@@ -61,7 +61,7 @@ export default async function Vista({ params, searchParams }: { params: Promise<
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {items.map((r) => (
-            <div key={r.id} className="overflow-hidden rounded-card border border-line bg-card">
+            <Link key={r.id} href={`/reclamar/${code}/vista/${r.id}`} className="block overflow-hidden rounded-card border border-line bg-card transition hover:border-ink">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {r.image && <img src={r.image.includes("cdn.shopify.com") ? `${r.image}${r.image.includes("?") ? "&" : "?"}width=480` : r.image} alt="" loading="lazy" className="aspect-square w-full object-cover" />}
               <div className="space-y-0.5 p-2.5">
@@ -69,7 +69,7 @@ export default async function Vista({ params, searchParams }: { params: Promise<
                 <p className="line-clamp-2 text-sm">{r.title}</p>
                 <p className="text-xs text-ink-soft">Nuevo · {h.city ?? "Paraguay"}</p>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
