@@ -76,7 +76,16 @@ def guardar(path: str, filas: list[dict]):
         w = csv.DictWriter(f, fieldnames=COLUMNAS, delimiter=";", extrasaction="ignore")
         w.writeheader()
         w.writerows(filas)
-    os.replace(tmp, path)   # nunca deja el CSV a medio escribir
+    # nunca deja el CSV a medio escribir. En Windows, OneDrive o Excel a veces
+    # bloquean el archivo un instante: reintenta antes de rendirse.
+    for intento in range(10):
+        try:
+            os.replace(tmp, path)
+            return
+        except PermissionError:
+            time.sleep(1 + intento)
+    sys.exit(f"No pude guardar {path}: está abierto en Excel o bloqueado por OneDrive. "
+             f"Cerralo y volvé a correr la misma etapa (no se pierde nada; lo último quedó en {tmp}).")
 
 
 def slugify(s: str) -> str:
@@ -148,13 +157,17 @@ def revisar(path: str, minimo: int):
 def invitar(path: str):
     filas = leer(path)
     m = cl.Michimi()
-    existentes = {i["slug"]: i["code"] for i in m.req("GET", "store_invites?select=code,slug") or []}
+    previas = m.req("GET", "store_invites?select=code,slug,name") or []
+    existentes = {i["slug"]: i["code"] for i in previas}
+    por_nombre = {i["name"].strip().lower(): (i["slug"], i["code"]) for i in previas}
     pend = [r for r in filas if r["apta"] == "si" and not r["codigo"]]
     print(f"{len(pend)} invitaciones por crear")
     for r in pend:
         if r["slug"] and r["slug"] in existentes:      # quedó a medias en una corrida anterior
             r["codigo"] = existentes[r["slug"]]
             slug = r["slug"]
+        elif r["nombre"].strip().lower() in por_nombre:   # se creó pero el CSV no llegó a guardarse
+            slug, r["codigo"] = por_nombre[r["nombre"].strip().lower()]
         else:
             base = slugify(r["nombre"])
             slug, k = base, 2
