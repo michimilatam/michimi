@@ -79,3 +79,100 @@ export function PrepareCatalog({ code }: { code: string }) {
     </span>
   );
 }
+
+const firstName = "Luis Fernando";
+
+function template(name: string, products: number, code: string) {
+  const reclamo = `https://www.michimi.com/reclamar/${code}`;
+  const vista = `${reclamo}/vista`;
+  if (products > 0) {
+    return {
+      subject: `${name}: les armamos una tienda en Michimi`,
+      body: `Hola, equipo de ${name}:
+
+Soy ${firstName}, de Michimi (michimi.com), un marketplace paraguayo para comprar y vender con la entrega protegida por un PIN.
+
+Tomamos ${products} productos de su web y les armamos una tienda de prueba. Todavía no está publicada: solo la ven ustedes con este link:
+${vista}
+
+Si les sirve, la reclaman gratis acá, revisan precios y publican lo que quieran:
+${reclamo}
+
+Durante el piloto no cobramos comisión ni mensualidad, y les damos una mano con la carga.
+
+¿Les interesa? Respondan este correo y lo vemos.
+
+Saludos,
+${firstName}
+Michimi`,
+    };
+  }
+  return {
+    subject: `${name}, una tienda gratis en Michimi`,
+    body: `Hola, equipo de ${name}:
+
+Soy ${firstName}, de Michimi (michimi.com), un marketplace paraguayo para comprar y vender con la entrega protegida por un PIN.
+
+Les reservamos una tienda con su nombre. Se activa gratis desde acá:
+${reclamo}
+
+Si nos mandan su lista de productos (Excel, catálogo o fotos), se la cargamos nosotros. Durante el piloto no cobramos comisión ni mensualidad.
+
+¿Les interesa? Respondan este correo y lo vemos.
+
+Saludos,
+${firstName}
+Michimi`,
+  };
+}
+
+export function OutreachBox({ code, name, products, email, sent, lastSent, optOut }: {
+  code: string; name: string; products: number; email: string | null; sent: number; lastSent: string | null; optOut: boolean;
+}) {
+  const router = useRouter();
+  const t = template(name, products, code);
+  const [open, setOpen] = useState(false);
+  const [to, setTo] = useState(email ?? "");
+  const [subject, setSubject] = useState(t.subject);
+  const [body, setBody] = useState(t.body);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const sb = supabaseBrowser();
+
+  async function send() {
+    setBusy(true); setMsg(null);
+    const { error } = await sb.rpc("send_store_email", { p_code: code, p_to: to.trim(), p_subject: subject, p_body: body });
+    setBusy(false);
+    if (error) return setMsg(error.message);
+    setMsg("Enviado desde comercios@michimi.com");
+    setOpen(false);
+    router.refresh();
+  }
+  async function toggleOptOut() {
+    await sb.from("store_invites").update({ opt_out: !optOut }).eq("code", code);
+    router.refresh();
+  }
+
+  if (optOut) return (
+    <span className="inline-flex items-center gap-2 text-ink-soft">Pidió BAJA <button type="button" onClick={toggleOptOut} className="underline">deshacer</button></span>
+  );
+  return (
+    <div className="w-full">
+      <span className="inline-flex flex-wrap items-center gap-3">
+        <button type="button" onClick={() => setOpen((o) => !o)} className="font-semibold underline">{sent ? "Escribir de nuevo" : "Escribir por email"}</button>
+        {sent > 0 && <span className="text-ink-soft">{sent} enviado{sent > 1 ? "s" : ""} · último {new Date(lastSent!).toLocaleDateString("es-PY")}</span>}
+        <button type="button" onClick={toggleOptOut} className="text-ink-soft underline">Marcar BAJA</button>
+        {msg && <span>{msg}</span>}
+      </span>
+      {open && (
+        <div className="mt-2 space-y-2 rounded-card border border-line p-3">
+          <p className="text-xs text-ink-soft">Sale de <b>Michimi Comercios &lt;comercios@michimi.com&gt;</b>. Las respuestas te llegan a la Gmail. Revisalo y personalizalo antes de mandar.</p>
+          <input type="email" value={to} onChange={(e) => setTo(e.target.value)} className="field" placeholder="Email del comercio" />
+          <input value={subject} onChange={(e) => setSubject(e.target.value)} className="field" maxLength={120} />
+          <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={14} className="field font-mono text-sm" />
+          <button type="button" disabled={busy || !to} onClick={send} className="btn-primary h-9 px-4 text-sm">{busy ? "Enviando…" : "Enviar"}</button>
+        </div>
+      )}
+    </div>
+  );
+}

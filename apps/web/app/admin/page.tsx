@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { VerificationActions, ReportActions, ListingModeration } from "./Actions";
-import { NewStoreInvite, InviteStatus, CopyLink, PrepareCatalog } from "./Stores";
+import { NewStoreInvite, InviteStatus, CopyLink, PrepareCatalog, OutreachBox } from "./Stores";
 
 export const metadata: Metadata = { title: "Administración", robots: { index: false } };
 const REASONS: Record<string, string> = { estafa: "Posible estafa", producto_falso: "Producto falso", precio_sospechoso: "Precio sospechoso", spam: "Spam", ofensivo: "Ofensivo", otro: "Otro" };
@@ -171,7 +171,7 @@ async function Comercios() {
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <p className="font-semibold">{i.name} <span className="font-normal text-ink-soft">· /tienda/{i.slug}</span></p>
-                  <p className="text-sm text-ink-soft">{[i.contact, i.website, i.instagram, i.phone, i.city].filter(Boolean).join(" · ")}</p>
+                  <p className="text-sm text-ink-soft">{[i.email, i.contact, i.website, i.instagram, i.phone, i.city].filter(Boolean).join(" · ")}</p>
                   {i.claimed_at && <p className="text-sm">Reclamada el {new Date(i.claimed_at).toLocaleDateString("es-PY")} · {counts.get(i.claimed_by) ?? 0} productos activos</p>}
                 </div>
                 <InviteStatus code={i.code} status={i.status} />
@@ -181,6 +181,9 @@ async function Comercios() {
                 <span className="text-ink-soft">Catálogo: {prep.get(i.code)?.p ?? 0} por revisar · {prep.get(i.code)?.ok ?? 0} publicados</span>
                 {i.status !== "descartada" && <Link href={`/reclamar/${i.code}/vista`} className="underline">Vista previa</Link>}
                 {i.website && i.status !== "descartada" && <PrepareCatalog code={i.code} />}
+                {i.status !== "descartada" && i.status !== "reclamada" && (
+                  <OutreachBox code={i.code} name={i.name} products={prep.get(i.code)?.p ?? 0} email={i.email} sent={i.sent_count ?? 0} lastSent={i.last_sent_at} optOut={!!i.opt_out} />
+                )}
                 {i.status === "reclamada" && <Link href={`/tienda/${i.slug}`} className="underline">Ver tienda</Link>}
               </div>
             </li>

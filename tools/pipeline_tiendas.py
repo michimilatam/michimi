@@ -10,6 +10,7 @@ ventana, volvés a correr la misma etapa y sigue donde quedó.
 ETAPAS
   0. plantilla   Crea tiendas.csv vacío con las columnas. Lo llenás vos
                  (nombre, web, instagram, ciudad, rubro). Podés pegar desde Excel.
+  1b. emails     Busca el email de contacto publicado en cada web y lo carga en Michimi.
   1. revisar     Entra a cada web: ¿responde?, ¿qué plataforma usa?, ¿cuántos
                  productos tiene? Sin IA, rápido. Marca apta = si / no.
   2. invitar     Crea la invitación en Michimi para cada tienda apta que no
@@ -48,6 +49,7 @@ import catalogo_local as cl  # noqa: E402
 
 COLUMNAS = [
     "nombre", "web", "instagram", "telefono", "ciudad", "rubro",          # las llenás vos
+    "email",                                                              # etapa emails (o a mano)
     "estado_web", "plataforma", "productos_estimados", "apta",            # etapa 1
     "codigo", "slug",                                                     # etapa 2
     "productos_cargados", "con_precio", "catalogado_el", "error",         # etapa 3
@@ -176,7 +178,7 @@ def invitar(path: str):
                 k += 1
             fila = {"name": r["nombre"][:80], "slug": slug, "website": r["web"] or None,
                     "instagram": r["instagram"].lstrip("@") or None, "phone": r["telefono"] or None,
-                    "city": r["ciudad"] or None, "note": (r["rubro"] or "") + " · pipeline"}
+                    "city": r["ciudad"] or None, "email": r["email"] or None, "note": (r["rubro"] or "") + " · pipeline"}
             res = m.req("POST", "store_invites", fila, {"Prefer": "return=representation"})
             r["codigo"] = res[0]["code"]
             existentes[slug] = r["codigo"]
@@ -217,20 +219,63 @@ def catalogar(path: str, modelo: str, maximo: int, lote: int):
     resumen(filas)
 
 
+# ---------------------------------------------------------------- etapa emails
+MAL = re.compile(r"(example|sentry|wixpress|shopify|domain\.com|email\.com|tu@|tuemail|@2x|\.(png|jpe?g|webp|gif|svg)$)", re.I)
+
+
+def buscar_email(web: str) -> str:
+    """Busca un email de contacto publicado en la web del comercio (inicio y página de contacto)."""
+    w = cl.Web(cl.origen(web))
+    host = w.base.split("//")[1].replace("www.", "")
+    vistos: list[str] = []
+    for ruta in ("/", "/pages/contact", "/pages/contacto", "/contacto", "/contact"):
+        html = w.get(w.base + ruta)
+        if not html:
+            continue
+        for e in re.findall(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", html):
+            e = e.strip(".").lower()
+            if not MAL.search(e) and e not in vistos:
+                vistos.append(e)
+        if vistos:
+            break
+    # preferimos el del propio dominio (ventas@tienda.com.py) sobre un gmail
+    propios = [e for e in vistos if e.endswith("@" + host)]
+    return (propios or vistos or [""])[0]
+
+
+def emails(path: str):
+    filas = leer(path)
+    m = None
+    pend = [r for r in filas if r["web"] and not r["email"] and r["apta"] == "si"]
+    print(f"{len(pend)} tiendas sin email (busco en su web)")
+    for n, r in enumerate(pend, 1):
+        try:
+            r["email"] = buscar_email(r["web"])
+        except Exception as e:
+            r["error"] = str(e)[:200]
+        print(f"[{n}/{len(pend)}] {r['nombre']}: {r['email'] or 'no encontrado'}")
+        if r["email"] and r["codigo"]:
+            m = m or cl.Michimi()
+            m.req("PATCH", f"store_invites?code=eq.{r['codigo']}", {"email": r["email"]}, {"Prefer": "return=minimal"})
+        guardar(path, filas)
+    con = sum(1 for r in filas if r["email"])
+    print(f"\nCon email: {con} de {len(filas)}. Los que faltan: buscá el email en su Instagram o llamá.")
+
+
 # ---------------------------------------------------------------- etapa 4
 def reporte(path: str):
     filas = leer(path)
     out = "reporte.csv"
     with open(out, "w", newline="", encoding="utf-8-sig") as f:
         w = csv.writer(f, delimiter=";")
-        w.writerow(["nombre", "ciudad", "rubro", "productos", "con_precio", "link_reclamo", "vista_previa",
+        w.writerow(["nombre", "email", "ciudad", "rubro", "productos", "con_precio", "link_reclamo", "vista_previa",
                     "instagram", "telefono", "web", "nota"])
         for r in sorted(filas, key=lambda x: -int(x["productos_cargados"] or 0)):
             if not r["codigo"]:
                 continue
             n = int(r["productos_cargados"] or 0)
             nota = "Tienda armada: mandar vista previa" if n >= 10 else ("Pocos productos: ofrecer carga" if n else "Sin productos: ofrecer carga")
-            w.writerow([r["nombre"], r["ciudad"], r["rubro"], n, r["con_precio"] or 0,
+            w.writerow([r["nombre"], r["email"], r["ciudad"], r["rubro"], n, r["con_precio"] or 0,
                         f"https://www.michimi.com/reclamar/{r['codigo']}",
                         f"https://www.michimi.com/reclamar/{r['codigo']}/vista" if n else "",
                         r["instagram"], r["telefono"], r["web"], nota])
@@ -250,7 +295,7 @@ def resumen(filas: list[dict]):
 
 def main():
     ap = argparse.ArgumentParser(description="Pipeline de comercios de Michimi")
-    ap.add_argument("etapa", choices=["plantilla", "revisar", "invitar", "catalogar", "reporte"])
+    ap.add_argument("etapa", choices=["plantilla", "revisar", "emails", "invitar", "catalogar", "reporte"])
     ap.add_argument("--csv", default="tiendas.csv")
     ap.add_argument("--modelo", default="qwen2.5:7b")
     ap.add_argument("--max", type=int, default=300)
@@ -261,6 +306,8 @@ def main():
         plantilla(a.csv)
     elif a.etapa == "revisar":
         revisar(a.csv, a.minimo)
+    elif a.etapa == "emails":
+        emails(a.csv)
     elif a.etapa == "invitar":
         invitar(a.csv)
     elif a.etapa == "catalogar":
