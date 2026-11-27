@@ -13,8 +13,9 @@ export default async function Reclamar({ params }: { params: Promise<{ code: str
   const inv = (data as { name: string; slug: string; status: string; products: number }[] | null)?.[0];
   if (!inv || inv.status === "descartada") notFound();
   const { data: auth } = await supabase.auth.getUser();
-  const { data: me } = auth.user ? await supabase.from("profiles").select("store_slug").eq("id", auth.user.id).maybeSingle() : { data: null };
-  const yaEsMia = me?.store_slug === inv.slug;
+  const { data: st } = await supabase.from("stores").select("id").eq("slug", inv.slug).maybeSingle();
+  const { data: mem } = auth.user && st ? await supabase.from("store_members").select("role").eq("store_id", st.id).eq("user_id", auth.user.id).maybeSingle() : { data: null };
+  const yaEsMia = !!mem;
 
   return (
     <div className="mx-auto max-w-xl space-y-5">
@@ -32,13 +33,13 @@ export default async function Reclamar({ params }: { params: Promise<{ code: str
       {yaEsMia ? (
         <Link href={`/tienda/${inv.slug}`} className="btn-primary">Ver mi tienda</Link>
       ) : inv.status === "reclamada" ? (
-        <p className="rounded-card border border-line p-4 text-ink-soft">Esta tienda ya fue reclamada. Si sos el dueño y no fuiste vos, escribinos a comercios@michimi.com.</p>
+        <p className="rounded-card border border-line p-4 text-ink-soft">Esta tienda ya fue reclamada. Si trabajás en el comercio, pedile al dueño que te sume al equipo desde "Administrar comercio". Si sos el dueño y no fuiste vos, escribinos a comercios@michimi.com.</p>
       ) : auth.user ? (
         <ClaimButton code={code} next={inv.products > 0 ? "/tienda/mi-catalogo" : null} />
       ) : (
         <Link href={`/ingresar?next=${encodeURIComponent(`/reclamar/${code}`)}`} className="btn-primary">Ingresá para reclamarla</Link>
       )}
-      <p className="text-xs text-ink-soft">Al reclamarla, el nombre de tu perfil pasa a ser el de la tienda. ¿Dudas? comercios@michimi.com</p>
+      <p className="text-xs text-ink-soft">Al reclamarla quedás como dueño del comercio y después podés sumar a tu equipo. ¿Dudas? comercios@michimi.com</p>
     </div>
   );
 }

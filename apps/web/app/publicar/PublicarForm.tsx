@@ -11,7 +11,7 @@ import { photoUrl } from "@/lib/photo";
 import { DeleteListing } from "./DeleteListing";
 
 export type EditListing = {
-  id: string; kind: ListingKind; title: string; description: string | null; category: string; subcategory: string | null; condition: string | null;
+  id: string; store_id?: string | null; kind: ListingKind; title: string; description: string | null; category: string; subcategory: string | null; condition: string | null;
   price_type: PriceType; price_amount: number | null; currency: CurrencyCode; country: CountryCode; region: string; city: string;
   status: string; coverage_regions: string[]; schedule: string | null; defects: string | null; accessories: string | null; attributes: Record<string, string> | null;
   photos: { id: number | string; path: string; position: number }[];
@@ -19,7 +19,8 @@ export type EditListing = {
 
 const MAX_PHOTOS = 12;
 
-export function PublicarForm({ initialCountry, initialKind = "producto", edit, defaultCity }: { initialCountry: CountryCode; initialKind?: ListingKind; edit?: EditListing; defaultCity?: string }) {
+export function PublicarForm({ initialCountry, initialKind = "producto", edit, defaultCity, stores = [], initialStore }: { initialCountry: CountryCode; initialKind?: ListingKind; edit?: EditListing; defaultCity?: string; stores?: { id: string; name: string }[]; initialStore?: string }) {
+  const [storeId, setStoreId] = useState<string>(edit ? (edit.store_id ?? "") : (initialStore ?? ""));
   const router = useRouter();
   const [kind, setKindState] = useState<ListingKind>(edit?.kind ?? initialKind);
   const [priceType, setPriceType] = useState<PriceType>(edit?.price_type ?? "fijo");
@@ -118,6 +119,7 @@ export function PublicarForm({ initialCountry, initialKind = "producto", edit, d
         kind: d.kind, price_type: d.priceType, coverage_regions: d.coverageRegions, schedule: d.schedule ?? null,
         price_amount: d.priceAmount ?? null, currency: d.currency, country: d.country, region: d.region, city: d.city,
         defects: d.defects ?? null, accessories: d.accessories ?? null, attributes: d.attributes,
+        ...(edit ? {} : { store_id: storeId || null }),
     };
     const { data: listing, error } = edit
       ? await supabase.from("listings").update(row).eq("id", edit.id).select("id").single()
@@ -161,6 +163,15 @@ export function PublicarForm({ initialCountry, initialKind = "producto", edit, d
         <h1 className="text-3xl font-bold">{edit ? "Editar publicación" : kind === "servicio" ? "Ofrecé tu servicio gratis" : "Publicá gratis"}</h1>
         <p className="text-ink-soft">{kind === "servicio" ? "Mostrá trabajos anteriores y dónde atendés: así te eligen." : "Las publicaciones con fotos y datos completos se venden más rápido."}</p>
       </header>
+      {!edit && stores.length > 0 && (
+        <label className="block rounded-card border border-line bg-card p-3 text-[15px]">
+          <span className="mb-1 block font-semibold">Publicar como</span>
+          <select value={storeId} onChange={(e) => setStoreId(e.target.value)} className="field">
+            <option value="">Yo (particular)</option>
+            {stores.map((st) => <option key={st.id} value={st.id}>{st.name} (comercio)</option>)}
+          </select>
+        </label>
+      )}
       <div hidden={!!edit} className="flex max-w-sm gap-1 rounded-full border border-line bg-card p-1" role="radiogroup" aria-label="Qué publicás">
         {(["producto", "servicio"] as const).map((k) => (
           <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(k)}

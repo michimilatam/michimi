@@ -8,7 +8,7 @@ export const revalidate = 3600;
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
   const { data } = await supabase.from("listings").select("id,updated_at:availability_confirmed_at").in("status", ["activa", "reservada"]).order("created_at", { ascending: false }).limit(20000);
-  const { data: stores } = await supabase.from("profiles").select("store_slug").eq("is_store", true).not("store_slug", "is", null);
+  const { data: stores } = await supabase.from("stores").select("slug").is("deleted_at", null);
   const regions = COUNTRIES[SEO_COUNTRY].regions;
   const out: MetadataRoute.Sitemap = [
     { url: SITE, changeFrequency: "hourly", priority: 1 },
@@ -26,7 +26,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const r of regions) out.push({ url: SITE + productUrl(cat, undefined, r), changeFrequency: "daily", priority: 0.6 });
     for (const s of CATEGORIES[cat].subs) out.push({ url: SITE + productUrl(cat, s.slug), changeFrequency: "daily", priority: 0.6 });
   }
-  for (const st of stores ?? []) out.push({ url: `${SITE}/tienda/${st.store_slug}`, changeFrequency: "daily", priority: 0.7 });
+  for (const st of stores ?? []) out.push({ url: `${SITE}/tienda/${st.slug}`, changeFrequency: "daily", priority: 0.7 });
   for (const l of data ?? []) out.push({ url: `${SITE}/publicacion/${l.id}`, lastModified: l.updated_at ?? undefined, changeFrequency: "daily", priority: 0.7 });
   return out;
 }

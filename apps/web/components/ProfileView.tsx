@@ -16,7 +16,7 @@ export async function ProfileView({ p }: { p: any }) {
   const [{ data: rep }, { data: ratings }, { data: listings }] = await Promise.all([
     supabase.from("user_reputation").select("*").eq("user_id", id).maybeSingle(),
     supabase.from("ratings").select("score,role,comment,created_at,rater:profiles!ratings_rater_id_fkey(display_name)").eq("ratee_id", id).order("created_at", { ascending: false }).limit(30),
-    supabase.from("listings").select("id,title,price_amount,price_type,currency,condition,city,status,listing_photos(path,thumb_path,position)").eq("seller_id", id).in("status", ["activa", "reservada"]).order("created_at", { ascending: false }),
+    supabase.from("listings").select("id,title,price_amount,price_type,currency,condition,city,status,listing_photos(path,thumb_path,position)").eq("seller_id", id).is("store_id", null).in("status", ["activa", "reservada"]).order("created_at", { ascending: false }),
   ]);
   const seller = (ratings ?? []).filter((r) => r.role === "seller");
   const buyer = (ratings ?? []).filter((r) => r.role === "buyer");

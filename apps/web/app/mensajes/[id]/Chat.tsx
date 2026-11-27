@@ -44,6 +44,8 @@ export function Chat(props: {
   const [err, setErr] = useState<string | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
   const cur = props.conversation.listing.currency as CurrencyCode;
+  // En un comercio varias personas responden: "mío" es todo lo de mi lado (comprador o comercio).
+  const sameSide = (id: string | null) => id !== null && (props.role === "compro" ? id === props.conversation.buyerId : id !== props.conversation.buyerId);
   const convId = props.conversation.id;
   const l = props.conversation.listing;
 
@@ -159,7 +161,7 @@ export function Chat(props: {
       <ol className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 py-4">
         {messages.length === 0 && <li className="py-8 text-center text-sm text-ink-soft">Empezá la conversación. Las ofertas formales aparecen como tarjetas.</li>}
         {messages.map((m) => {
-          const mine = m.sender_id === props.me;
+          const mine = sameSide(m.sender_id);
           if (m.kind === "sistema") return (
             <li key={m.id} className="mx-auto max-w-md rounded-2xl bg-line/60 px-3 py-1.5 text-center text-xs text-ink-soft">
               {m.body}
@@ -169,7 +171,7 @@ export function Chat(props: {
           if (m.kind === "oferta") {
             const o = offers.find((x) => x.id === m.offer_id);
             if (!o) return null;
-            const canAnswer = o.status === "pendiente" && o.created_by !== props.me && new Date(o.expires_at) > new Date();
+            const canAnswer = o.status === "pendiente" && !sameSide(o.created_by) && new Date(o.expires_at) > new Date();
             return (
               <li key={m.id} className={`w-fit max-w-[80%] rounded-2xl border-2 border-ink bg-card p-3 ${mine ? "ml-auto" : ""}`}>
                 <p className="text-xs uppercase tracking-wide text-ink-soft">{mine ? `Tu ${word}` : svc ? "Presupuesto recibido" : "Oferta recibida"} · {OFFER_STATUS[o.status] ?? o.status}</p>

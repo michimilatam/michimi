@@ -17,7 +17,7 @@ export default async function Conversacion({ params }: { params: Promise<{ id: s
     supabase.from("offers").select("*").eq("conversation_id", id),
     (c.listing ? supabase.from("operations").select("id,status").eq("listing_id", c.listing.id) : supabase.from("operations").select("id,status").eq("request_id", c.request.id)).eq("buyer_id", c.buyer_id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
-  const imSeller = c.seller_id === u.user.id;
+  const imSeller = c.buyer_id !== u.user.id;
   const { data: blk } = await supabase.from("blocks").select("blocked_id").eq("blocker_id", u.user.id).eq("blocked_id", imSeller ? c.buyer_id : c.seller_id).maybeSingle();
   const other = imSeller ? c.buyer : c.seller;
   const subject = c.listing ?? { id: c.request.id, title: `Pedido: ${c.request.title}`, currency: c.request.currency ?? "PYG", price_amount: null, status: c.request.status === "abierto" ? "activa" : "reservada", listing_photos: [], href: `/pedidos/${c.request.id}` };

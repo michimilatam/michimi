@@ -13,7 +13,7 @@ export type Draft = {
 const SUBS = CATEGORIES.muebles.subs;
 const fmt = (n: number | null) => (n ? n.toLocaleString("es-PY") : "");
 
-export function CatalogReview({ items, userId, city, region, slug }: { items: Draft[]; userId: string; city: string; region: string | null; slug: string }) {
+export function CatalogReview({ items, userId, storeId, city, region, slug }: { items: Draft[]; userId: string; storeId: string; city: string; region: string | null; slug: string }) {
   const router = useRouter();
   const [rows, setRows] = useState(items.map((d) => ({ ...d, on: !!d.price_amount })));
   const [busy, setBusy] = useState<string | null>(null);
@@ -30,7 +30,7 @@ export function CatalogReview({ items, userId, city, region, slug }: { items: Dr
       let description = (d.description ?? "").trim();
       if (description.length < 20) description = `${d.title}. ${description}`.trim().padEnd(20, ".");
       const { data: l, error } = await supabase.from("listings").insert({
-        seller_id: userId, kind: "producto", price_type: "fijo", title: d.title, description: description.slice(0, 4000),
+        seller_id: userId, store_id: storeId, kind: "producto", price_type: "fijo", title: d.title, description: description.slice(0, 4000),
         category: d.category, subcategory: d.subcategory, condition: "nuevo", price_amount: d.price_amount, currency: d.currency,
         country: "PY", region, city, attributes: {},
       }).select("id").single();

@@ -21,7 +21,7 @@ async function load(id: string) {
   const supabase = await supabaseServer();
   const { data } = await supabase
     .from("listings")
-    .select("*, listing_photos(path,position), seller:profiles!listings_seller_id_fkey(id,display_name,avatar_url,created_at,last_active_at,profession,professional_status,is_store,store_slug)")
+    .select("*, listing_photos(path,position), seller:profiles!listings_seller_id_fkey(id,display_name,avatar_url,created_at,last_active_at,profession,professional_status), store:stores(id,slug,name,avatar_url,created_at)")
     .eq("id", id)
     .maybeSingle();
   return { supabase, l: data };
@@ -51,7 +51,8 @@ export default async function Publicacion({ params, searchParams }: { params: P;
   const r = summarize((sellerRatings ?? []).map((x) => x.score));
   const photos = [...l.listing_photos].sort((a: { position: number }, b: { position: number }) => a.position - b.position);
   const attrs = Object.entries((l.attributes ?? {}) as Record<string, string>);
-  const isOwner = auth.user?.id === l.seller_id;
+  const { data: canManage } = auth.user ? await supabase.rpc("can_manage_listing", { p_listing: l.id }) : { data: false };
+  const isOwner = !!canManage;
   const svc = l.kind === "servicio";
   const { data: fav } = auth.user ? await supabase.from("favorites").select("listing_id").eq("user_id", auth.user.id).eq("listing_id", l.id).maybeSingle() : { data: null };
   const days = Math.floor((Date.now() - new Date(l.availability_confirmed_at).getTime()) / 86_400_000);
@@ -124,15 +125,15 @@ export default async function Publicacion({ params, searchParams }: { params: P;
         <ShareButtons path={`/publicacion/${l.id}`} title={l.title} />
         {!isOwner && <ReportButton listingId={l.id} sellerId={l.seller_id} loggedIn={!!auth.user} />}
 
-        <Link href={l.seller.is_store && l.seller.store_slug ? `/tienda/${l.seller.store_slug}` : `/perfil/${l.seller.id}`} className="flex items-center gap-3 rounded-card border border-line bg-card p-4">
-          {l.seller.avatar_url ? <img src={l.seller.avatar_url} alt="" className="h-12 w-12 rounded-full" /> : <div className="h-12 w-12 rounded-full bg-line" />}
+        <Link href={l.store ? `/tienda/${l.store.slug}` : `/perfil/${l.seller.id}`} className="flex items-center gap-3 rounded-card border border-line bg-card p-4">
+          {l.store ? (l.store.avatar_url ? <img src={l.store.avatar_url} alt="" className="h-12 w-12 rounded-full object-cover" /> : <div className="grid h-12 w-12 place-items-center rounded-full bg-ink text-lg font-bold text-lima">{l.store.name.slice(0, 1)}</div>) : l.seller.avatar_url ? <img src={l.seller.avatar_url} alt="" className="h-12 w-12 rounded-full" /> : <div className="h-12 w-12 rounded-full bg-line" />}
           <div>
-            <p className="flex items-center gap-1.5 font-semibold">{l.seller.display_name}{l.seller.is_store && <StoreBadge label />}{l.seller.professional_status === "verificado" && <VerifiedBadge label />}</p>
+            <p className="flex items-center gap-1.5 font-semibold">{l.store ? <>{l.store.name}<StoreBadge label /></> : <>{l.seller.display_name}{l.seller.professional_status === "verificado" && <VerifiedBadge label />}</>}</p>
             {svc && l.seller.profession && <p className="text-sm">{l.seller.profession}</p>}
             <p className="text-sm text-ink-soft">
               {svc ? "Profesional" : "Vendedor"}: {r.count ? `${r.score.toFixed(1)}★` : "sin calificaciones"} · {BADGE_LABEL[r.badge]} · {rep?.sales_completed ?? 0} {svc ? "trabajos" : "ventas"}
             </p>
-            <p className="text-xs text-ink-soft">En Michimi desde {new Date(l.seller.created_at).toLocaleDateString("es-PY", { month: "long", year: "numeric" })}</p>
+            <p className="text-xs text-ink-soft">En Michimi desde {new Date((l.store ?? l.seller).created_at).toLocaleDateString("es-PY", { month: "long", year: "numeric" })}</p>
           </div>
         </Link>
 

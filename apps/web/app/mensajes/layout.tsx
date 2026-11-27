@@ -31,9 +31,9 @@ export default async function MensajesLayout({ children }: { children: React.Rea
     supabase.rpc("unread_counts"),
   ]);
 
-  const last = new Map<string, { body: string; kind: string; mine: boolean; at: string }>();
+  const last = new Map<string, { body: string; kind: string; mine: boolean; sender: string | null; at: string }>();
   for (const m of msgs ?? []) {
-    if (!last.has(m.conversation_id)) last.set(m.conversation_id, { body: m.body, kind: m.kind, mine: m.sender_id === me, at: m.created_at });
+    if (!last.has(m.conversation_id)) last.set(m.conversation_id, { body: m.body, kind: m.kind, mine: false, sender: m.sender_id, at: m.created_at });
   }
   const unreadBy = new Map(((unread as { conversation_id: string; unread: number }[] | null) ?? []).map((r) => [r.conversation_id, Number(r.unread)]));
 
@@ -43,9 +43,10 @@ export default async function MensajesLayout({ children }: { children: React.Rea
     const subject = r.listing ?? (r.request ? { ...r.request, listing_photos: [] } : null);
     if (!subject) continue;
     const key = r.listing ? r.listing.id : `pedido-${r.request!.id}`;
-    const imSeller = r.seller_id === me;
+    const imSeller = r.buyer_id !== me;
     const other = imSeller ? r.buyer : r.seller;
-    const l = last.get(r.id);
+    const l0 = last.get(r.id);
+    const l = l0 && { ...l0, mine: l0.sender !== null && (imSeller ? l0.sender !== r.buyer_id : l0.sender === r.buyer_id) };
     const cover = [...subject.listing_photos].sort((a, b) => a.position - b.position)[0]; const coverPath = (cover as { thumb_path?: string | null; path: string } | undefined)?.thumb_path ?? cover?.path ?? null;
     const g = groups.get(key) ?? {
       listingId: key, title: r.request ? `Pedido: ${subject.title}` : subject.title, status: subject.status, cover: coverPath, role: imSeller ? "vendo" : "compro",
